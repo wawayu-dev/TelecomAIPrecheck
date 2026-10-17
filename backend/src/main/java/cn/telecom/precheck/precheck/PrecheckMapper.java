@@ -40,7 +40,9 @@ public interface PrecheckMapper {
     @Update("""
         UPDATE ai_precheck_run SET status='PENDING_REVIEW',call_status='FAILED',failure_code='INTERRUPTED',
           completed_at=UTC_TIMESTAMP(6),version=version+1
-        WHERE status='ANALYZING' AND created_at < TIMESTAMPADD(MINUTE,-5,UTC_TIMESTAMP(6))
+        WHERE id=#{id} AND status='ANALYZING' AND created_at < TIMESTAMPADD(MINUTE,-5,UTC_TIMESTAMP(6))
         """)
-    int recoverInterrupted();
+    int recoverInterrupted(String id);
+    @Select("SELECT id FROM ai_precheck_run WHERE status='ANALYZING' AND created_at < TIMESTAMPADD(MINUTE,-5,UTC_TIMESTAMP(6)) ORDER BY created_at LIMIT 100")
+    List<String> interruptedIds();
 }

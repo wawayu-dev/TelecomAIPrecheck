@@ -10,6 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** 明确开启才会产生一次真实供应商调用；仅发送合成样本，不伪造验收成功。 */
+@org.springframework.security.test.context.support.WithMockUser(username="operator",roles="OPERATOR")
 @SpringBootTest(properties="precheck.context-provider=mock")
 @ActiveProfiles("mysql")
 @EnabledIfEnvironmentVariable(named="RUN_XFYUN_LIVE",matches="true")

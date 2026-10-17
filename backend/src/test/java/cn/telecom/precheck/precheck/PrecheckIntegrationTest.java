@@ -19,6 +19,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@org.springframework.security.test.context.support.WithMockUser(username="operator",roles="OPERATOR")
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("mysql")
@@ -37,7 +38,7 @@ class PrecheckIntegrationTest {
         when(model.call(anyString(),anyString())).thenReturn(new PrecheckModel.Reply(Samples.VALID,"reported-model"));
     }
     @Test void savesSuccessHistoryAndIndependentEvidenceSnapshot() throws Exception {
-        var response=mvc.perform(post("/api/ai-prechecks/tickets/DEMO-001"))
+        var response=mvc.perform(post("/api/ai-prechecks/tickets/DEMO-001").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.run.status").value("PENDING_REVIEW"))
                 .andExpect(jsonPath("$.run.callStatus").value("SUCCESS"))
                 .andExpect(jsonPath("$.result.evidenceIds[0]").value("BILL-001"))
@@ -45,6 +46,7 @@ class PrecheckIntegrationTest {
         var data=json.readTree(response.getContentAsString());
         String id=data.path("run").path("id").asText();
         assertThat(data.path("run").path("traceId").asText()).isEqualTo(response.getHeader("X-Trace-Id"));
+        org.springframework.security.core.context.SecurityContextHolder.setContext(org.springframework.security.test.context.TestSecurityContextHolder.getContext());
         var saved=service.get(id);
         assertThat(saved.run().actualModel()).isEqualTo("reported-model");
         assertThat(saved.run().promptVersion()).isEqualTo(PromptCatalog.VERSION);
@@ -107,7 +109,7 @@ class PrecheckIntegrationTest {
         String id=UUID.randomUUID().toString();
         store.begin(id,"DEMO-001","test","trace","{}");
         jdbc.update("UPDATE ai_precheck_run SET created_at=TIMESTAMPADD(MINUTE,-10,UTC_TIMESTAMP(6)) WHERE id=?",id);
-        mapper.recoverInterrupted();
+        store.recover(id);
         store.finish(id,"SUCCESS","late-model",10,null,"{}","[]");
         var view=service.get(id);
         assertThat(view.run().failureCode()).isEqualTo("INTERRUPTED");
@@ -118,7 +120,7 @@ class PrecheckIntegrationTest {
         mvc.perform(get("/api/ai-prechecks/tickets/DEMO-001?limit=101")).andExpect(status().isBadRequest());
         mvc.perform(get("/api/ai-prechecks/tickets/DEMO-001?limit=text")).andExpect(status().isBadRequest());
         mvc.perform(get("/api/ai-prechecks/{id}",UUID.randomUUID())).andExpect(status().isNotFound());
-        mvc.perform(post("/api/ai-prechecks/tickets/UNKNOWN")).andExpect(status().isNotFound());
+        mvc.perform(post("/api/ai-prechecks/tickets/UNKNOWN").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())).andExpect(status().isNotFound());
         verify(model,never()).call(anyString(),anyString());
     }
 }

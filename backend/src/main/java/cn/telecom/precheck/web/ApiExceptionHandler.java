@@ -42,6 +42,20 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiError> precheckNotFound(HttpServletRequest request) {
         return error(404, "PRECHECK_NOT_FOUND", "未找到预审记录", request);
     }
+    @ExceptionHandler(cn.telecom.precheck.review.ReviewConflictException.class)
+    ResponseEntity<ApiError> conflict(HttpServletRequest request) {
+        return error(409, "REVIEW_CONFLICT", "状态或版本已变化，请刷新后重试", request);
+    }
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    ResponseEntity<ApiError> denied(HttpServletRequest request) {
+        return error(403, "FORBIDDEN", "当前身份无操作权限", request);
+    }
+    @ExceptionHandler({org.springframework.web.bind.MethodArgumentNotValidException.class,
+        org.springframework.http.converter.HttpMessageNotReadableException.class,
+        jakarta.validation.ConstraintViolationException.class})
+    ResponseEntity<ApiError> invalidBody(HttpServletRequest request) {
+        return error(400, "INVALID_REQUEST", "请求字段不合法", request);
+    }
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception exception, HttpServletRequest request) {
         // 不记录异常原文/堆栈，以免宿主异常携带投诉、SQL 或密钥。

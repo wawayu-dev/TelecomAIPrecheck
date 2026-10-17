@@ -168,7 +168,7 @@ public interface TicketContextProvider {
 - [x] 宿主适配接口与模拟证据
 - [x] Spring AI + 讯飞 MaaS 真实联调（spark-x2.5，合成工单）
 - [x] 结构化预审、证据校验与异常兜底（自动化测试及真实 MaaS 单样本联调通过）
-- [ ] 人工审核、状态约束及审计事件
+- [x] 人工审核、状态约束及审计事件（MySQL 事务、乐观锁、角色校验）
 - [ ] Vue 3 单页与模拟宿主路由接入
 - [ ] 关键自动化测试与合成样本评测
 - [ ] Docker 部署与健康检查
@@ -193,10 +193,12 @@ npm run dev
 - [启动、环境变量与 MySQL 配置](docs/TelecomAIPrecheck/README.md)
 - [Issue #1 测试记录](docs/issue-1-validation.md)
 
-Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。启用 mysql profile 后提供预审 API 和独立快照表；模型调用须配置讯飞凭据。当前前端仍为只读联调页，尚无人工审核或演示账号。
+Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。启用 mysql profile 后提供预审 API 和独立快照表；模型调用须配置讯飞凭据。人工审核后端及三个角色的演示账号已实现，前端仍为只读联调页，审核页面将在 Issue #4 实现。
 
 - [Issue #2 API、模型配置与数据设计](docs/issue-2-precheck.md)
 - [Issue #2 验证记录](docs/issue-2-validation.md)
+- [Issue #3 人工审核、权限、审计与持久化演示](docs/issue-3-review.md)
+- [Issue #3 测试记录](docs/issue-3-validation.md)
 
 ## 11. 项目定位与声明
 

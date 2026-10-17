@@ -9,7 +9,8 @@ import org.springframework.scheduling.annotation.*;
 @EnableScheduling
 public class InterruptedRunRecovery {
     private final PrecheckMapper mapper;
-    public InterruptedRunRecovery(PrecheckMapper mapper) { this.mapper = mapper; }
+    private final PrecheckStore store;
+    public InterruptedRunRecovery(PrecheckMapper mapper, PrecheckStore store) { this.mapper = mapper; this.store=store; }
     @Scheduled(fixedDelay = 60000, initialDelay = 60000)
-    public void recover() { mapper.recoverInterrupted(); }
+    public void recover() { mapper.interruptedIds().forEach(store::recover); }
 }

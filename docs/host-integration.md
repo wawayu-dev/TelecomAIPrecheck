@@ -13,7 +13,7 @@ TicketContextProvider ticketContextProvider(HostTicketService service) {
 }
 ```
 
-上述 HostTicketService 是宿主自行实现的示意类型，不是当前仓库 API。宿主认证上下文须由服务端取得，先校验工单访问权限，再返回经过数据最小化处理的上下文，不能信任前端自报用户或角色。Issue #1 未实现认证，只可本地合成数据联调；服务默认绑定 127.0.0.1。身份与角色校验在 Issue #3 落地。
+上述 HostTicketService 是宿主自行实现的示意类型，不是当前仓库 API。宿主认证上下文须由服务端取得，先校验工单访问权限，再返回经过数据最小化处理的上下文，不能信任前端自报用户或角色。服务默认绑定 127.0.0.1。Issue #3 已在 mysql profile 实现服务端身份与角色校验，见下方审核契约。
 
 ## 数据字段
 
@@ -48,10 +48,12 @@ TicketContextProvider ticketContextProvider(HostTicketService service) {
 - 400 INVALID_REQUEST；404 TICKET_NOT_FOUND/RESOURCE_NOT_FOUND；405 METHOD_NOT_ALLOWED；503 CONTEXT_UNAVAILABLE；500 INTERNAL_ERROR。
 - 不回显异常原文、SQL、密钥或堆栈；当前 Trace ID 是请求关联 ID，不是完整分布式链路实现。
 
-开发时 Vite 代理 `/api`、`/actuator` 至后端，不使用宽泛 CORS。正式 Vue Router 模块挂载、宿主身份复用、结果回交在 Issue #4 验证；README 里的预审与审核接口当前仍属规划。
+开发时 Vite 代理 `/api`、`/actuator` 至后端，不使用宽泛 CORS。正式 Vue Router 模块挂载、宿主身份复用、结果回交在 Issue #4 验证；预审和审核后端已实现，见各阶段契约。
 
-## 后续状态设计草案（未实现）
+## 已实现的状态设计
 
-业务状态建议：CREATED → ANALYZING → PENDING_REVIEW → REVIEWED；人工决定单独记录 CONFIRMED 或 REJECTED。模型调用结果独立记录 SUCCESS 或 FAILED；失败后保留失败原因和已有证据，进入待人工处理。驳回结束当前轮，再次预审创建新轮次，历史不覆盖。Issue #3 实现前需确认该语义。
+业务状态：ANALYZING → PENDING_REVIEW → REVIEWED；人工决定单独记录 CONFIRMED 或 REJECTED。模型调用结果独立记录 SUCCESS 或 FAILED；失败后保留失败原因和已有证据，进入待人工处理。驳回结束当前轮，再次预审创建新轮次，历史不覆盖。Issue #3 已实现该语义。
 
 模块只拥有自己的预审、证据快照、审核与审计数据；不写宿主表。Issue #2 已实现预审和独立证据快照表，新增接口与状态行为见 [预审契约](issue-2-precheck.md)。
+
+人工审核、角色映射、CSRF、乐观锁和事务审计的接入说明见 [Issue #3 契约](issue-3-review.md)。

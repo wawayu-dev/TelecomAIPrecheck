@@ -84,3 +84,7 @@ Maven 生成 `backend/target/ai-precheck-0.1.0-SNAPSHOT.jar`。可从仓库根�
 GitHub Actions 在 push、pull_request 或手动触发时构建，后端任务启动 MySQL 服务并启用数据库测试；前端使用 npm ci、测试与生产构建。镜像发布和演示环境部署留待 Issue #5。
 
 提交格式：`feat: 中文说明`、`chore: 中文说明` 等类型前缀加英文冒号与中文描述。
+
+## 持久化演示与人工审核（Issue #3）
+
+建议使用仓库根目录的 `scripts/demo.sh up` 和 `scripts/demo.sh backend`。脚本自动生成本机随机密码，使用 MySQL 8.4、独立端口 13307 与持久卷；`stop` 不删除卷。mysql profile 业务接口现在需要角色认证与写请求 CSRF。完整步骤见 [Issue #3 契约](../issue-3-review.md)。旧的匿名 curl 预审示例需要改为携带认证及 CSRF，或运行 `python3 scripts/demo-smoke.py`。

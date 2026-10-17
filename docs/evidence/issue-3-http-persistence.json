@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-17",
+  "database": "MySQL 8.4",
+  "synthetic": true,
+  "httpFlow": {
+    "synthetic": true,
+    "runId": "c79a9711-667e-4b25-9047-0cff126cd7d7",
+    "status": "REVIEWED",
+    "callStatus": "FAILED",
+    "failureCode": "MODEL_NOT_CONFIGURED",
+    "decision": "CONFIRMED",
+    "auditActions": [
+      "PRECHECK_STARTED",
+      "PRECHECK_FAILED",
+      "REVIEW_CONFIRMED"
+    ],
+    "verification": "created-and-reviewed"
+  },
+  "afterContainerRecreation": {
+    "synthetic": true,
+    "runId": "c79a9711-667e-4b25-9047-0cff126cd7d7",
+    "status": "REVIEWED",
+    "callStatus": "FAILED",
+    "failureCode": "MODEL_NOT_CONFIGURED",
+    "decision": "CONFIRMED",
+    "auditActions": [
+      "PRECHECK_STARTED",
+      "PRECHECK_FAILED",
+      "REVIEW_CONFIRMED"
+    ],
+    "verification": "persisted"
+  }
+}
