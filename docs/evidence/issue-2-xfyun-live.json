@@ -1,0 +1,83 @@
+{
+  "runId": "5bdeb239-e07f-466a-ab19-743b8042b2a9",
+  "result": {
+    "summary": "?????????????30??????????????????????????????????????????????????????????",
+    "currency": "CNY",
+    "evidenceIds": [
+      "AUTH-001",
+      "BILL-001",
+      "ORDER-001"
+    ],
+    "complaintType": "VALUE_ADDED_CHARGE_DISPUTE",
+    "disputedAmount": 30.0,
+    "recommendation": "VERIFY_AUTHORIZATION"
+  },
+  "status": "PENDING_REVIEW",
+  "traceId": "b0a10131-fef4-4ff6-b08e-0c43572ff70f",
+  "findings": [],
+  "ticketId": "DEMO-001",
+  "callStatus": "SUCCESS",
+  "durationMs": 6470,
+  "actualModel": "spark-x2.5",
+  "createdAtUtc": "2026-10-17 14:06:41.536918",
+  "promptVersion": "charge-dispute-v1",
+  "completedAtUtc": "2026-10-17 14:06:48.065304",
+  "requestedModel": "spark-x2.5",
+  "evidenceSnapshot": {
+    "bills": {
+      "items": [
+        {
+          "amount": "30.00",
+          "currency": "CNY",
+          "serviceId": "VIDEO",
+          "evidenceId": "BILL-001",
+          "billingPeriod": "2026-10",
+          "subscriptionId": "SUB-001"
+        }
+      ],
+      "status": "AVAILABLE"
+    },
+    "ticketId": "DEMO-001",
+    "complaint": "?????30???????????????????????",
+    "synthetic": true,
+    "capturedAt": "2026-10-17T14:06:41.503416Z",
+    "customerRef": "SYNTHETIC-CUSTOMER-001",
+    "sourceSystem": "mock-host",
+    "schemaVersion": "1.0",
+    "subscriptions": {
+      "items": [
+        {
+          "currency": "CNY",
+          "orderedAt": "2026-09-01T02:00:00Z",
+          "serviceId": "VIDEO",
+          "evidenceId": "ORDER-001",
+          "serviceName": "????",
+          "monthlyPrice": "30.00",
+          "subscriptionId": "SUB-001"
+        }
+      ],
+      "status": "AVAILABLE"
+    },
+    "authorizations": {
+      "items": [
+        {
+          "channel": "MOCK_SMS",
+          "evidenceId": "AUTH-001",
+          "description": "??????????????",
+          "authorizedAt": "2026-09-01T02:00:00Z",
+          "subscriptionId": "SUB-001"
+        }
+      ],
+      "status": "AVAILABLE"
+    }
+  },
+  "verification": {
+    "provider": "讯飞星辰 MaaS",
+    "syntheticDataOnly": true,
+    "endpoint": "https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions",
+    "thinking": "disabled",
+    "maxCompletionTokens": 1500,
+    "configuredTimeoutMs": 120000,
+    "note": "单条真实联调样本，不代表准确率或稳定性能。临时数据库清理后以本记录留存。"
+  }
+}

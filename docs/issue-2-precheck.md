@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-已实现后端预审链路、MySQL 历史和证据快照、Spring AI OpenAI 兼容客户端、确定性规则、DTO/证据 ID/字段白名单校验、超时与异常兜底。真实讯飞验收须另外配置有效账户并运行一次真实请求，自动化模拟测试不替代该验收。
+已实现后端预审链路、MySQL 历史和证据快照、Spring AI OpenAI 兼容客户端、确定性规则、DTO/证据 ID/字段白名单校验、超时与异常兜底。2026-10-17 已通过 spark-x2.5 真实合成工单联调，记录见 [验收报告](issue-2-validation.md)。自动化模拟测试与真实调用分别记录。
 
 当前默认 `mock` profile 仍只提供 Issue #1 上下文联调；启用 `mysql` profile 才注册预审 API、数据库迁移和模型客户端。没有内存存储冒充数据库，也没有本地假 AI 回答冒充讯飞成功。
 
@@ -14,7 +14,7 @@
 export SPRING_PROFILES_ACTIVE=mysql
 export XFYUN_BASE_URL=https://maas-api.cn-huabei-1.xf-yun.com
 export XFYUN_COMPLETIONS_PATH=/v2/chat/completions
-export XFYUN_MODEL='你的控制台已开通的Model ID'
+export XFYUN_MODEL=spark-x2.5
 # XFYUN_API_KEY 请通过 IDE 环境变量或本机密钥配置注入，勿写入仓库或截图。
 export XFYUN_TIMEOUT_MS=30000
 mvn -f backend/pom.xml spring-boot:run
@@ -22,7 +22,7 @@ mvn -f backend/pom.xml spring-boot:run
 
 变量模板位于 `backend/.env.example`。Spring Boot 不自动读取 .env；不要把复制模板当成已经配置成功。默认不提供模型 ID，避免调用未授权或错误模型。
 
-根据 [讯飞 MaaS 产品使用说明](https://www.xfyun.cn/doc/spark/产品使用说明.html) 和 [HTTP 推理服务文档](https://static.xfyun.cn/doc/spark/推理服务-http.html)，MaaS 提供 OpenAI 兼容协议。当前默认将官方 `/v2` 地址拆成 host 与 `/v2/chat/completions`。旧账户可能使用不同入口，必须以控制台为准。例如传统星火接口使用 host `https://spark-api-open.xf-yun.com` 与路径 `/v1/chat/completions`，凭据类型和模型 ID 也需匹配，不能混用 Coding Plan、Token Plan 或不同产品的密钥。
+根据 [讯飞 MaaS 产品使用说明](https://www.xfyun.cn/doc/spark/产品使用说明.html) 和 [HTTP 推理服务文档](https://static.xfyun.cn/doc/spark/推理服务-http.html)，MaaS 提供 OpenAI 兼容协议。当前默认将官方 `/v2` 地址拆成 host 与 `/v2/chat/completions`。本项目已验证的模型为 spark-x2.5。其他模型或旧接口需要重新验证参数兼容性，不能仅更改 URL 就宣称接入成功；不要混用 Coding Plan、Token Plan 或不同产品的密钥。
 
 Spring AI 版本固定 1.1.2，使用 [OpenAiApi.Builder](https://docs.spring.io/spring-ai/docs/1.1.2/api/org/springframework/ai/openai/api/OpenAiApi.Builder.html) 配置 URL、路径及 HTTP 客户端；未使用未来版本的 SDK API。
 
@@ -81,6 +81,8 @@ Flyway `V1__precheck_runs_and_evidence.sql` 自动创建：
 先在一个短事务中插入 ANALYZING/RUNNING 记录与快照。事务成功后再调用模型，模型调用不占用数据库事务。最终以条件更新写入 PENDING_REVIEW + SUCCESS/FAILED；保存历史不会重新读取宿主数据。`durationMs` 测量模型适配调用（含排队）耗时，不含数据库写入；在规则核验前失败时为 0。
 
 失败码：MODEL_NOT_CONFIGURED、MODEL_TIMEOUT、MODEL_ERROR、INVALID_OUTPUT、INVALID_EVIDENCE_REFERENCE、INVALID_CONTEXT、INTERRUPTED。只保存受控错误码，不保存供应商异常原文、密钥或未校验输出。
+
+依据 [Spark-X2.5 官方接口文档](https://www.xfyun.cn/doc/spark/Spark-X2.5.html)，当前使用 `max_completion_tokens=1500`、`thinking.type=disabled`，不显式设置 temperature。预审信息整理不需要深度思考；仍保留结构、证据和人工核验边界。
 
 HTTP 默认 30 秒、可配置 100–120000 毫秒；有总等待时间限制、连接/读取超时、4 个模型工作线程及 16 个排队槽；不自动重试，避免重复计费。截断或非 stop 完成的响应拒绝。未配置工具回调，禁止内部工具执行。
 

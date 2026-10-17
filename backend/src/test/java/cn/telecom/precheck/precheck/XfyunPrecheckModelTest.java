@@ -50,6 +50,10 @@ class XfyunPrecheckModelTest {
             assertThat(request.path("model").asText()).isEqualTo("test-model");
             assertThat(request.path("messages").get(0).path("role").asText()).isEqualTo("system");
             assertThat(request.has("tools")).isFalse();
+            assertThat(request.has("temperature")).isFalse();
+            assertThat(request.has("max_tokens")).isFalse();
+            assertThat(request.path("max_completion_tokens").asInt()).isEqualTo(1500);
+            assertThat(request.path("thinking").path("type").asText()).isEqualTo("disabled");
             assertThat(authorization.get()).isEqualTo("Bearer synthetic-test-key");
         }
     }

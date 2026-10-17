@@ -44,8 +44,9 @@ public final class XfyunPrecheckModel implements PrecheckModel, AutoCloseable {
                     }
                 }).build();
         client = OpenAiChatModel.builder().openAiApi(api)
-                .defaultOptions(OpenAiChatOptions.builder().model(properties.model()).temperature(0.1)
-                        .maxTokens(1500).internalToolExecutionEnabled(false).build())
+                .defaultOptions(OpenAiChatOptions.builder().model(properties.model())
+                        .maxCompletionTokens(1500)
+                        .extraBody(java.util.Map.of("thinking", java.util.Map.of("type", "disabled"))).internalToolExecutionEnabled(false).build())
                 .retryTemplate(RetryTemplate.builder().maxAttempts(1).build()).build();
     }
     @Override public String modelId() {
