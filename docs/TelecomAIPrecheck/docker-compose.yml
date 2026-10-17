@@ -1,0 +1,22 @@
+# Issue #1 仅启动基础数据库；应用镜像与整栈部署在 Issue #5 完成。
+name: telecom-ai-precheck
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: telecom_ai_precheck
+      MYSQL_USER: precheck
+      MYSQL_PASSWORD: ${DB_PASSWORD:?请设置 DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请设置 MYSQL_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -h 127.0.0.1 -u$$MYSQL_USER -D telecom_ai_precheck -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+volumes:
+  mysql-data:

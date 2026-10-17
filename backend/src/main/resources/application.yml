@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: telecom-ai-precheck
+  profiles:
+    default: mock
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+precheck:
+  context-provider: ${CONTEXT_PROVIDER:mock}

@@ -8,7 +8,7 @@ Telecom AI Precheck 是一个基于 **Java 17、Spring Boot、Spring AI 与科�
 
 项目面向电信运营商**已有的客服／投诉工单系统**，以**增值业务扣费争议**为切入点，帮助工单处理人员完成投诉信息整理、收费与订购证据预核验、预审意见生成和人工复核。它不替代原有工单系统，更不让 AI 直接决定退费。
 
-**项目状态：MVP 设计与开发中。** 本 README 同时说明设计目标与计划验收项；未勾选的能力不代表已经实现或上线。
+**项目状态：Issue #1 基础工程已实现，AI 预审与人工审核尚未实现。** 本 README 同时说明设计目标与计划验收项；未勾选的能力不代表已经实现或上线。
 
 ## 1. 为什么做这个模块？
 
@@ -164,8 +164,8 @@ public interface TicketContextProvider {
 
 计划使用 GitHub Issues 管理任务，通过有意义的 Commit 记录实现过程，并由 GitHub Actions 运行编译、测试与镜像构建。部署目标为**可验证的演示环境**，不是运营商生产系统。
 
-- [ ] 项目骨架与基础 CI
-- [ ] 宿主适配接口与模拟证据
+- [x] 项目骨架与基础 CI 配置（远端执行结果待推送后验证）
+- [x] 宿主适配接口与模拟证据
 - [ ] Spring AI + 讯飞 MaaS 真实联调
 - [ ] 结构化预审、证据校验与异常兜底
 - [ ] 人工审核、状态约束及审计事件
@@ -176,7 +176,24 @@ public interface TicketContextProvider {
 
 ### 本地运行
 
-本节将在首个可运行版本完成后补充，包括环境变量、数据库初始化、启动命令与演示账号。仓库初始化阶段不提供未经验证的“一键启动”命令。
+当前可运行只读 Mock 上下文演示，无需数据库或模型密钥：
+
+```sh
+mvn -f backend/pom.xml spring-boot:run
+# 另开终端
+cd frontend
+npm ci
+npm run dev
+```
+
+健康检查：`GET http://127.0.0.1:8080/actuator/health`。上下文：`GET /api/tickets/DEMO-001/context`；另有 DEMO-002（缺少授权）、DEMO-003（金额不一致）合成场景。前端默认访问 http://127.0.0.1:5173。
+
+- [业务需求调研与资料来源](docs/requirements-research.md)
+- [宿主集成契约](docs/host-integration.md)
+- [启动、环境变量与 MySQL 配置](docs/TelecomAIPrecheck/README.md)
+- [Issue #1 测试记录](docs/issue-1-validation.md)
+
+Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。没有预审数据库表、模型调用、审核或演示账号；这些能力按后续 Issue 实现。
 
 ## 11. 项目定位与声明
 

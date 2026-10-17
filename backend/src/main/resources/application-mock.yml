@@ -1,0 +1,5 @@
+# Issue #1 的只读演示不持久化数据，无需数据库或 MaaS 凭据。
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
