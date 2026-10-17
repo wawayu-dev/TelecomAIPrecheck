@@ -8,7 +8,7 @@ Telecom AI Precheck 是一个基于 **Java 17、Spring Boot、Spring AI 与科�
 
 项目面向电信运营商**已有的客服／投诉工单系统**，以**增值业务扣费争议**为切入点，帮助工单处理人员完成投诉信息整理、收费与订购证据预核验、预审意见生成和人工复核。它不替代原有工单系统，更不让 AI 直接决定退费。
 
-**项目状态：Issue #1 基础工程已实现，AI 预审与人工审核尚未实现。** 本 README 同时说明设计目标与计划验收项；未勾选的能力不代表已经实现或上线。
+**项目状态：Issue #1 已完成；Issue #2 后端预审链路已实现，真实讯飞联调待配置验收；人工审核尚未实现。** 本 README 同时说明设计目标与计划验收项；未勾选的能力不代表已经实现或上线。
 
 ## 1. 为什么做这个模块？
 
@@ -135,7 +135,7 @@ public interface TicketContextProvider {
 
 ## 8. 数据与可追溯性
 
-模块计划维护三张核心表：
+模块最终计划维护以下核心表；Issue #2 已实现 ai_precheck_run，并以独立 ai_precheck_evidence_snapshot 表保存快照，审核与审计表在 Issue #3 实现：
 
 | 表 | 记录内容 |
 | --- | --- |
@@ -164,10 +164,10 @@ public interface TicketContextProvider {
 
 计划使用 GitHub Issues 管理任务，通过有意义的 Commit 记录实现过程，并由 GitHub Actions 运行编译、测试与镜像构建。部署目标为**可验证的演示环境**，不是运营商生产系统。
 
-- [x] 项目骨架与基础 CI 配置（远端执行结果待推送后验证）
+- [x] 项目骨架与基础 CI（Issue #1 提交 1140824 远端通过）
 - [x] 宿主适配接口与模拟证据
 - [ ] Spring AI + 讯飞 MaaS 真实联调
-- [ ] 结构化预审、证据校验与异常兜底
+- [x] 结构化预审、证据校验与异常兜底（自动化模拟测试，真实 MaaS 待验收）
 - [ ] 人工审核、状态约束及审计事件
 - [ ] Vue 3 单页与模拟宿主路由接入
 - [ ] 关键自动化测试与合成样本评测
@@ -193,7 +193,10 @@ npm run dev
 - [启动、环境变量与 MySQL 配置](docs/TelecomAIPrecheck/README.md)
 - [Issue #1 测试记录](docs/issue-1-validation.md)
 
-Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。没有预审数据库表、模型调用、审核或演示账号；这些能力按后续 Issue 实现。
+Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。启用 mysql profile 后提供预审 API 和独立快照表；模型调用须配置讯飞凭据。当前前端仍为只读联调页，尚无人工审核或演示账号。
+
+- [Issue #2 API、模型配置与数据设计](docs/issue-2-precheck.md)
+- [Issue #2 验证记录](docs/issue-2-validation.md)
 
 ## 11. 项目定位与声明
 

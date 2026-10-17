@@ -1,4 +1,6 @@
 spring:
+  flyway:
+    enabled: false
   application:
     name: telecom-ai-precheck
   profiles:
@@ -19,3 +21,9 @@ management:
       show-details: never
 precheck:
   context-provider: ${CONTEXT_PROVIDER:mock}
+  xfyun:
+    api-key: ${XFYUN_API_KEY:}
+    base-url: ${XFYUN_BASE_URL:https://maas-api.cn-huabei-1.xf-yun.com}
+    completions-path: ${XFYUN_COMPLETIONS_PATH:/v2/chat/completions}
+    model: ${XFYUN_MODEL:}
+    timeout-ms: ${XFYUN_TIMEOUT_MS:30000}

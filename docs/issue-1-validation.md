@@ -39,6 +39,6 @@ MyBatis 3.0 系列与 Spring Boot 3.2–3.5、Java 17 的对应关系参考 [官
 
 ## CI 与未完成项
 
-`.github/workflows/ci.yml` 配置 push/PR/手动触发，后端启动真实 MySQL 并运行 Maven verify，前端运行 npm ci/test/build。YAML 已通过本地语法解析。**尚未推送和触发 GitHub Actions，不能将本地成功写成远端 CI 通过。**
+`.github/workflows/ci.yml` 配置 push/PR/手动触发，后端启动真实 MySQL 并运行 Maven verify，前端运行 npm ci/test/build。YAML 已通过本地语法解析。**后续验证：用户提供的 GitHub Actions 截图确认 main 分支提交 1140824 的工作流 #1 已通过（约 1 分 1 秒）。**
 
-Issue #1 的代码、文档与本地验收已完成；远端 CI 执行待推送后确认。未实施 AI 预审、人工审核、业务规则判断、业务数据持久化、宿主认证、镜像发布或演示服务器部署。行业调研为公开资料研究，没有真实客服访谈或业务收益测量。
+Issue #1 的代码、文档、本地验收和上述远端 CI 验证均已完成。未实施 AI 预审、人工审核、业务规则判断、业务数据持久化、宿主认证、镜像发布或演示服务器部署。行业调研为公开资料研究，没有真实客服访谈或业务收益测量。

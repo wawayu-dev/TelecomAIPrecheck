@@ -25,7 +25,7 @@ curl http://127.0.0.1:8080/actuator/health
 curl http://127.0.0.1:8080/api/tickets/DEMO-002/context
 ```
 
-后端默认 `mock` profile，禁用 JDBC 自动配置；Spring AI 仅引入基础模型依赖，无远程调用，也无需 API Key。未来接 MaaS 时再新增客户端及对应密钥变量，当前不放无效配置。
+后端默认 `mock` profile，禁用 JDBC 自动配置；默认 mock 环境不启用预审服务，也无需 API Key。Issue #2 的预审 API 与讯飞客户端在 mysql profile 下启用，详见 [预审接入说明](../issue-2-precheck.md)。
 
 ## MySQL 环境（可选）
 
@@ -47,7 +47,7 @@ export RUN_MYSQL_TESTS=true
 mvn -B -ntp -f backend/pom.xml verify
 ```
 
-`MySqlConnectivityTest` 通过 MyBatis 执行 `SELECT 1`；没有本阶段不需要的业务表。不要同时启用 mock 与 mysql profile，否则 mock 会排除数据源自动配置。
+`MySqlConnectivityTest` 通过 MyBatis 执行 `SELECT 1`；Issue #2 已通过 Flyway 创建预审与证据快照表，并增加真实 MySQL 持久化测试。不要同时启用 mock 与 mysql profile，否则 mock 会排除数据源自动配置。
 
 停止本项目数据库（保留数据卷）：
 

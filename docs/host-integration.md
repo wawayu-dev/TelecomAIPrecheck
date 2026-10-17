@@ -54,4 +54,4 @@ TicketContextProvider ticketContextProvider(HostTicketService service) {
 
 业务状态建议：CREATED → ANALYZING → PENDING_REVIEW → REVIEWED；人工决定单独记录 CONFIRMED 或 REJECTED。模型调用结果独立记录 SUCCESS 或 FAILED；失败后保留失败原因和已有证据，进入待人工处理。驳回结束当前轮，再次预审创建新轮次，历史不覆盖。Issue #3 实现前需确认该语义。
 
-模块只拥有自己的预审、证据快照、审核与审计数据；Issue #1 不创建业务表或写宿主表。
+模块只拥有自己的预审、证据快照、审核与审计数据；不写宿主表。Issue #2 已实现预审和独立证据快照表，新增接口与状态行为见 [预审契约](issue-2-precheck.md)。

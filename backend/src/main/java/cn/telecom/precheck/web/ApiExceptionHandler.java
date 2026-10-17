@@ -20,7 +20,7 @@ public class ApiExceptionHandler {
     }
     @ExceptionHandler(HandlerMethodValidationException.class)
     ResponseEntity<ApiError> invalid(HttpServletRequest request) {
-        return error(400, "INVALID_REQUEST", "工单 ID 格式不合法", request);
+        return error(400, "INVALID_REQUEST", "请求参数格式不合法", request);
     }
     @ExceptionHandler(ContextUnavailableException.class)
     ResponseEntity<ApiError> unavailable(HttpServletRequest request) {
@@ -33,6 +33,14 @@ public class ApiExceptionHandler {
     @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
     ResponseEntity<ApiError> methodNotAllowed(HttpServletRequest request) {
         return error(405, "METHOD_NOT_ALLOWED", "请求方法不支持", request);
+    }
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ApiError> invalidType(HttpServletRequest request) {
+        return error(400, "INVALID_REQUEST", "请求参数类型不合法", request);
+    }
+    @ExceptionHandler(cn.telecom.precheck.precheck.PrecheckNotFoundException.class)
+    ResponseEntity<ApiError> precheckNotFound(HttpServletRequest request) {
+        return error(404, "PRECHECK_NOT_FOUND", "未找到预审记录", request);
     }
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception exception, HttpServletRequest request) {
