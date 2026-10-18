@@ -17,10 +17,11 @@ const showingSnapshot = computed(() => source.value === 'snapshot' && !!selected
 const ticketTitle = computed(() => ({
   'DEMO-001': '视频会员扣费争议',
   'DEMO-002': '未确认的业务订购',
-  'DEMO-003': '月费金额不一致',
+  'DEMO-003': '视频会员扣费金额存在差异',
 }[props.ticketId] || selected.value?.result?.summary || '投诉核查工单'))
-const disputedAmount = computed(() => selected.value?.result?.disputedAmount ?? evidence.value?.bills?.items?.[0]?.amount)
-const evidenceCount = computed(() => ['bills', 'subscriptions', 'authorizations'].filter(key => evidence.value?.[key]?.status === 'AVAILABLE').length)
+const billAmount = computed(() => Number(evidence.value?.bills?.items?.[0]?.amount ?? selected.value?.result?.disputedAmount ?? 0))
+const orderAmount = computed(() => Number(evidence.value?.subscriptions?.items?.[0]?.monthlyPrice ?? 0))
+const amountDifference = computed(() => billAmount.value && orderAmount.value ? billAmount.value - orderAmount.value : null)
 const aiState = computed(() => {
   const run = selected.value?.run
   if (!run) return '等待执行'
@@ -53,37 +54,33 @@ function refreshPage() {
         <p><span>客户反馈</span>{{ context.complaint }}</p>
         <button class="text-button" :disabled="busy" @click="refreshPage">刷新</button>
       </section>
+      <div v-if="selected?.run.currentResult === false" class="message stale-note">该材料已被新版本替代，仅供历史追溯。</div>
 
-      <section class="reviewer-metrics" aria-label="核查概况">
-        <div><span>争议金额</span><strong>{{ disputedAmount == null ? '待确认' : '¥' + money(disputedAmount) }}</strong></div>
-        <div><span>证据查询</span><strong>{{ evidenceCount }} 类已获取</strong></div>
-        <div><span>AI 状态</span><strong :class="{ 'metric-warning': aiState === '未完成' }">{{ aiState }}</strong></div>
+      <section class="dispute-focus" aria-label="争议概览">
+        <header><span>当前争议</span><strong>{{ currentState }}</strong></header>
+        <div class="amount-comparison"><div><span>实际账单</span><b>¥{{ money(billAmount) }}</b></div><div><span>订购月费</span><b>¥{{ money(orderAmount) }}</b></div><div><span>金额差异</span><b>{{ amountDifference == null ? '待核实' : '¥' + money(Math.abs(amountDifference)) }}</b></div></div>
+        <p>{{ amountDifference ? '账单金额与订购月费存在差异，差异原因尚未明确，需要核实计费依据。' : '当前未形成确定的金额异常结论，请结合账单、订购和授权凭据核实。' }}</p>
+        <div v-if="selected?.findings?.length" class="focus-findings"><span v-for="(finding, index) in selected.findings" :key="index">{{ findings[finding.code] || '需要人工核查' }}</span></div>
       </section>
 
       <div class="reviewer-main">
         <div class="reviewer-primary">
           <section class="panel evidence-panel compact-evidence">
-            <div class="panel-heading"><div><h2>核查材料</h2></div><span v-if="selected?.evidenceSnapshot" class="muted">证据快照 {{ dateTime(selected.evidenceSnapshot.capturedAt) }}</span></div>
+            <div class="panel-heading"><div><h2>核查材料</h2></div></div>
             <div v-if="selected?.evidenceSnapshot" class="source-toggle"><button :class="{ chosen: source === 'snapshot' }" @click="source = 'snapshot'">核查时快照</button><button :class="{ chosen: source === 'current' }" @click="source = 'current'">当前数据</button></div>
             <EvidencePanel ref="evidencePanel" :context="evidence" :snapshot="showingSnapshot" />
           </section>
 
-          <section class="ai-assistance result-panel">
+          <section v-if="selected?.result" class="ai-assistance result-panel">
             <div class="ai-assistance-title"><h2>AI 辅助意见</h2><span>{{ aiState }}</span></div>
-            <div v-if="loading" class="ai-quiet-state">正在更新核查结果…</div>
-            <div v-else-if="!selected" class="ai-quiet-state">工单流转后自动生成核查建议。</div>
-            <template v-else>
-              <div v-if="selected.run.currentResult === false" class="ai-quiet-state">该材料已被新版本替代，仅供查看。</div>
-              <div v-if="selected.run.status === 'ANALYZING'" class="ai-quiet-state">系统正在准备核查建议，可先核对现有业务凭据。</div>
-              <div v-if="selected.run.callStatus === 'FAILED'" class="ai-fallback"><span>{{ failures[selected.run.failureCode] || '系统核查未完成' }}，本次未生成 AI 建议，可继续人工核查。</span><button v-if="canRetry" class="text-button" :disabled="busy" @click="retry">{{ writing ? '正在提交…' : '重新执行' }}</button></div>
-              <div v-if="selected.result" class="ai-output compact-ai-output"><p class="content-text">{{ selected.result.summary }}</p><p class="recommendation">{{ recommendations[selected.result.recommendation] }}</p></div>
-              <div v-if="selected.findings?.length" class="key-findings"><h3>需要关注</h3><div v-for="(finding, index) in selected.findings" :key="index"><span>{{ findings[finding.code] || '需要人工核查' }}</span><button v-for="id in finding.evidenceIds" :key="id" class="evidence-link" @click="locate(id)">{{ id }}</button></div></div>
-            </template>
+            <div class="ai-output compact-ai-output"><p class="content-text">{{ selected.result.summary }}</p><p class="recommendation">{{ recommendations[selected.result.recommendation] }}</p><div v-if="selected.result.evidenceIds?.length" class="evidence-links"><button v-for="id in selected.result.evidenceIds" :key="id" class="evidence-link" @click="locate(id)">{{ id }}</button></div></div>
           </section>
         </div>
 
         <section class="panel human-panel">
           <div class="panel-heading"><div><h2>人工核查</h2></div><span v-if="review" class="badge" :class="review.decision === 'CONFIRMED' ? 'good' : 'warning'">{{ review.decision === 'CONFIRMED' ? '已确认' : '待补充材料' }}</span></div>
+          <div v-if="selected?.run.callStatus === 'FAILED'" class="processing-ai-note"><span>智能核查未完成</span><p>{{ failures[selected.run.failureCode] || '本次未生成 AI 建议' }}，请直接核对业务证据。</p><button v-if="canRetry" class="text-button" :disabled="busy" @click="retry">{{ writing ? '正在提交…' : '重新执行' }}</button></div>
+          <div v-else-if="selected?.run.status === 'ANALYZING'" class="processing-ai-note"><span>智能核查处理中</span><p>系统正在准备核查建议，可先核对现有业务证据。</p></div>
           <div v-if="review && !loading" class="panel-body"><h3>核查摘要</h3><p class="content-text">{{ review.summary }}</p><h3>处理建议</h3><p>{{ recommendations[review.recommendation] }}</p><h3>核查意见</h3><p class="content-text">{{ review.reason }}</p><div class="review-signature">{{ review.actorId }} · {{ dateTime(review.reviewedAt) }}</div></div>
           <form v-else-if="canReview && !loading" class="review-form panel-body" @submit.prevent="submit('CONFIRMED')"><label for="review-summary">核查摘要 <span>必填</span></label><textarea id="review-summary" v-model="draft.summary" :disabled="busy" maxlength="1000" rows="3" required></textarea><label for="review-recommendation">处理建议</label><select id="review-recommendation" v-model="draft.recommendation" :disabled="busy"><option v-for="(label, key) in recommendations" :key="key" :value="key">{{ label }}</option></select><label for="review-reason">核查意见 <span>必填</span></label><textarea id="review-reason" v-model="draft.reason" :disabled="busy" maxlength="1000" rows="2" required></textarea><div class="review-buttons"><button class="primary" :disabled="busy">{{ writing ? '正在提交…' : '确认核查材料' }}</button><button type="button" class="secondary" :disabled="busy" @click="submit('REJECTED')">要求补充材料</button></div></form>
           <div v-else class="empty-panel compact">{{ !selected ? '等待系统核查结果。' : selected.run.status === 'ANALYZING' ? '系统仍在处理中。' : '当前材料不可编辑。' }}</div>

@@ -15,7 +15,7 @@ const roleUi = computed(() => ({
   ROLE_REVIEWER: { nav: ['核查待办', '处理中', '已完成'], heading: '核查待办', count: '3', filter: ['待处理', '全部'], crumb: '投诉核查' },
   ROLE_AUDITOR: { nav: ['审计工作台', '抽检记录'], heading: '审计工单', count: '3', filter: ['近期处理', '全部'], crumb: '质量审计' },
 }[currentRole.value] || { nav: [], heading: '', count: '0', filter: [], crumb: '' }))
-const tickets = [{ id: 'DEMO-001', label: '视频会员扣费争议', note: '账单与授权材料齐全', level: '普通', status: '处理中' }, { id: 'DEMO-002', label: '未确认的业务订购', note: '缺少授权凭据', level: '关注', status: '待补充' }, { id: 'DEMO-003', label: '月费金额不一致', note: '账单与订购价格存在差异', level: '普通', status: '已完成' }]
+const tickets = [{ id: 'DEMO-001', label: '视频会员扣费争议', note: '账单与授权材料齐全', level: '普通', operatorStatus: '登记中', reviewerStatus: '待核查' }, { id: 'DEMO-002', label: '未确认的业务订购', note: '缺少授权凭据', level: '关注', operatorStatus: '处理中', reviewerStatus: '待补充' }, { id: 'DEMO-003', label: '月费金额不一致', note: '账单与订购价格存在差异', level: '普通', operatorStatus: '已完成', reviewerStatus: '已完成' }]
 async function login() {
   if (signing.value) return
   signing.value = true; loginError.value = ''
@@ -40,35 +40,31 @@ async function logout() {
         <span><strong>客户服务运营平台</strong><small>Customer Service Operations</small></span>
       </a>
       <div class="system-header-right">
-        <span class="system-status"><i></i>系统运行正常</span>
-        <span>业务支持</span><span>帮助中心</span>
+        <span class="system-status"><i></i>运行正常</span>
         <div v-if="identity" class="header-user host-identity"><span class="avatar">{{ identity.actorId.slice(0, 1).toUpperCase() }}</span><span><strong>{{ identity.actorId }}</strong><small>{{ identity.roles.map(role => roles[role] || role).join(' / ') }}</small></span><button :disabled="signing" @click="logout">切换身份</button></div>
         <span v-else class="service-line">服务热线 10000</span>
       </div>
     </header>
 
     <template v-if="identity">
-      <nav class="business-nav role-business-nav" aria-label="岗位业务导航"><a v-for="(item, index) in roleUi.nav" :key="item" :class="{ active: index === 0 }">{{ item }}</a></nav>
-      <aside class="host-sidebar">
+      <nav class="business-nav role-business-nav" :class="{ 'role-full': currentRole === 'ROLE_AUDITOR' }" aria-label="岗位业务导航"><a v-for="(item, index) in roleUi.nav" :key="item" :class="{ active: index === 0 }">{{ item }}</a></nav>
+      <aside v-if="currentRole !== 'ROLE_AUDITOR'" class="host-sidebar">
         <div class="sidebar-heading"><strong>{{ roleUi.heading }}</strong><span>{{ roleUi.count }}</span></div>
-        <div class="sidebar-filter"><button v-for="(item, index) in roleUi.filter" :key="item" :class="{ active: index === 0 }">{{ item }}</button></div>
         <nav class="ticket-list" aria-label="宿主工单列表">
           <RouterLink v-for="ticket in tickets" :key="ticket.id" :to="`/host/tickets/${ticket.id}/precheck`" class="ticket-nav">
-            <div class="ticket-nav-top"><span class="ticket-type">{{ currentRole === 'ROLE_OPERATOR' ? ticket.status : currentRole === 'ROLE_AUDITOR' ? '已进入审计' : '待核查' }}</span><time>今日</time></div>
+            <div class="ticket-nav-top"><span class="ticket-type">{{ currentRole === 'ROLE_OPERATOR' ? ticket.operatorStatus : currentRole === 'ROLE_AUDITOR' ? '待审计' : ticket.reviewerStatus }}</span><time>今日</time></div>
             <strong>{{ ticket.label }}</strong><p>{{ ticket.note }}</p>
             <div class="ticket-nav-bottom"><code>{{ ticket.id }}</code><span :class="{ attention: ticket.level === '关注' }">{{ ticket.level }}</span></div>
           </RouterLink>
         </nav>
-        <div class="sidebar-notice"><strong>数据说明</strong><p>当前环境使用合成业务数据，不连接生产客户及账务系统。</p></div>
       </aside>
 
-      <div class="host-main">
+      <div class="host-main" :class="{ 'full-width': currentRole === 'ROLE_AUDITOR' }">
         <header class="host-topbar">
-          <div class="host-breadcrumb"><span>客户服务</span><i>/</i><strong>{{ roleUi.crumb }}</strong><em>{{ currentTicket }}</em></div>
+          <div class="host-breadcrumb"><strong>{{ roleUi.crumb }}</strong><em>{{ currentTicket }}</em></div>
           <div class="host-actions"><button class="plain-action" @click="$router.back()">返回</button></div>
         </header>
         <RouterView :key="route.fullPath" />
-        <footer class="host-footer"><span>客户服务运营平台 · 智能核查辅助模块</span><span>数据分级：内部使用　|　操作全程留痕</span></footer>
       </div>
     </template>
 

@@ -24,7 +24,8 @@ afterEach(() => wrappers.splice(0).forEach(wrapper => wrapper.unmount()))
 describe('按岗位隔离的工作台', () => {
   it('客服只登记并提交投诉，不读取核查、证据结果或审计', async () => {
     const { wrapper, host } = setup('OPERATOR'); await flushPromises()
-    expect(wrapper.text()).toContain('登记投诉工单')
+    expect(wrapper.text()).toContain('新建投诉')
+    expect(wrapper.text()).toContain('提交投诉工单')
     expect(wrapper.text()).not.toContain('核查建议')
     expect(host.api.history).not.toHaveBeenCalled()
     expect(host.api.current).not.toHaveBeenCalled()
@@ -45,8 +46,8 @@ describe('按岗位隔离的工作台', () => {
 
   it('质检使用独立只读审计页，按需展开技术日志', async () => {
     const { wrapper, host } = setup('AUDITOR'); await flushPromises()
-    expect(wrapper.text()).toContain('投诉工单审计')
-    expect(wrapper.text()).toContain('处理时间线')
+    expect(wrapper.text()).toContain('工单审计概览')
+    expect(wrapper.text()).toContain('审计轨迹')
     expect(wrapper.text()).toContain('查看技术日志')
     expect(wrapper.find('form').exists()).toBe(false)
     expect(wrapper.find('.review-form').exists()).toBe(false)
