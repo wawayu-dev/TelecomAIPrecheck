@@ -20,11 +20,11 @@ npm ci
 npm run dev
 ```
 
-打开 http://127.0.0.1:5173/host/tickets/DEMO-001/precheck 。模拟宿主使用 `docs/TelecomAIPrecheck/.env` 中的三个 DEMO_*_PASSWORD；该文件只在本机保存且被 Git 忽略。不要把密码、数据库凭据或模型 Key 放进 VITE_* 变量。
+打开 http://127.0.0.1:5173/host/tickets/DEMO-001/precheck 。模拟宿主允许从 operator、reviewer、auditor 三个白名单岗位中选择并一键建立本机会话，不向浏览器下发或硬编码密码。该入口默认关闭，仅由 `scripts/demo.sh backend` 为本地合成数据演示显式开启；其他部署必须保持关闭并改用宿主统一认证。不要把密码、数据库凭据或模型 Key 放进 VITE_* 变量。
 
 完整页面需要 mysql profile；默认 mock profile 只提供只读上下文 API，不提供本页面需要的身份和预审接口。无模型配置时，仍可实际验证失败转人工、人工审核和审计；不能将此描述成真实模型调用成功。配置 XFYUN_API_KEY 和 XFYUN_MODEL 后，新一轮预审才调用真实模型。
 
-切换身份会调用 `POST /api/session/logout`（CSRF 保护），清除服务端会话及本机内存身份，工单路由保持不变。演示 Basic 凭据只在内存中保留，刷新浏览器需要重新登录，不写入 localStorage/sessionStorage。
+登录会调用 `POST /api/demo-session`，由后端白名单角色建立演示 Session；切换身份会调用 `POST /api/session/logout`（CSRF 保护），清除服务端会话及本机内存身份，工单路由保持不变。刷新浏览器需要重新选择身份，不写入 localStorage/sessionStorage。
 
 ## 嵌入现有 Vue 3 + Vue Router 4 宿主
 
@@ -65,6 +65,7 @@ identity 为响应式 Ref，值为 null 或 `{ actorId, roles }`；角色为 ROL
 沿用 TicketContextProvider 提供业务上下文，不查询或更新宿主具体表。读取/预审/审核/审计 API 见 [Issue #2](issue-2-precheck.md) 和 [Issue #3](issue-3-review.md)。模拟宿主另使用：
 
 - `GET /api/session`：身份、角色、CSRF token/header。
+- `POST /api/demo-session`：仅演示环境开放，按白名单岗位建立 Session，不接受任意角色。
 - `POST /api/session/logout`：退出会话，成功 204。
 
 真实宿主可用既有登录及退出接口替代上述模拟宿主接口，并向模块注入已有 request。跨系统部署时认证、CSRF、路径代理和工单数据权限需由宿主适配，不承诺无修改接入所有系统。使用 history 路由时，Web 服务器需把前端页面路径回退至 index.html，API 路径单独代理到 Spring Boot。

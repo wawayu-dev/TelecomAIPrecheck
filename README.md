@@ -196,7 +196,7 @@ npm run dev
 - [启动、环境变量与 MySQL 配置](docs/TelecomAIPrecheck/README.md)
 - [Issue #1 测试记录](docs/issue-1-validation.md)
 
-Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。启用 mysql profile 后提供预审 API 和独立快照表；模型调用须配置讯飞凭据。已提供预审、人工复核与审计单页。演示密码位于本机 `docs/TelecomAIPrecheck/.env`，登录一次后由模块复用宿主身份。默认 mock profile 仍只提供只读上下文 API，完整页面需启用 mysql profile。
+Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。启用 mysql profile 后提供预审 API 和独立快照表；模型调用须配置讯飞凭据。已提供预审、人工复核与审计单页。演示页面选择岗位后可一键建立本机会话，不需要输入密码；生产接入必须关闭该入口并复用宿主统一认证。默认 mock profile 仍只提供只读上下文 API，完整页面需启用 mysql profile。
 
 - [Issue #2 API、模型配置与数据设计](docs/issue-2-precheck.md)
 - [Issue #2 验证记录](docs/issue-2-validation.md)

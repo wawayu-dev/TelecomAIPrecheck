@@ -6,7 +6,7 @@ import { errorText } from './modules/precheck/api'
 const host = inject(precheckHostKey)
 const route = useRoute()
 const identity = host.identity
-const account = ref('operator'), password = ref(''), signing = ref(false), loginError = ref('')
+const account = ref('operator'), signing = ref(false), loginError = ref('')
 const transitioning = ref(false), transitionNotice = ref(''), transitionRevision = ref(0)
 const roles = { ROLE_OPERATOR: '客服受理人员', ROLE_REVIEWER: '投诉处理专员', ROLE_AUDITOR: '质检审核人员（只读）' }
 const currentTicket = computed(() => typeof route.params.ticketId === 'string' ? route.params.ticketId : '')
@@ -15,9 +15,9 @@ const tickets = [{ id: 'DEMO-001', label: '视频会员扣费争议', note: '账
 async function login() {
   if (signing.value) return
   signing.value = true; loginError.value = ''; transitionNotice.value = ''
-  try { await host.login(account.value, password.value) }
-  catch (error) { loginError.value = error.status === 401 ? '账号或密码不正确，请核对宿主演示账号。' : errorText(error) }
-  finally { password.value = ''; signing.value = false }
+  try { await host.login(account.value) }
+  catch (error) { loginError.value = error.status === 401 ? '演示身份登录未启用，请检查后端配置。' : errorText(error) }
+  finally { signing.value = false }
 }
 async function logout() {
   if (signing.value) return
@@ -92,16 +92,14 @@ async function transitionTicket() {
       </section>
       <section class="login-area">
         <form class="host-login-card" @submit.prevent="login">
-          <div class="login-card-heading"><span class="login-lock" aria-hidden="true">◈</span><div><h2>用户登录</h2><p>请使用工号身份进入系统</p></div></div>
+          <div class="login-card-heading"><span class="login-lock" aria-hidden="true">◈</span><div><h2>演示身份登录</h2><p>选择岗位后可直接进入对应工作台</p></div></div>
           <label for="host-account">岗位身份</label>
           <select id="host-account" v-model="account" :disabled="signing"><option value="operator">客服受理人员 · operator</option><option value="reviewer">投诉处理专员 · reviewer</option><option value="auditor">质检审核人员（只读）· auditor</option></select>
-          <label for="host-password">登录密码</label>
-          <input id="host-password" v-model="password" type="password" required autocomplete="current-password" :disabled="signing" placeholder="请输入登录密码">
           <div v-if="loginError" role="alert" class="login-error">{{ loginError }}</div>
-          <button :disabled="signing" class="login-submit">{{ signing ? '正在验证身份…' : '登录并进入工单' }}</button>
+          <button :disabled="signing" class="login-submit">{{ signing ? '正在登录…' : '登录' }}</button>
           <div class="login-footnote"><strong>演示环境说明</strong> 客服受理人员负责创建与流转工单，投诉处理专员负责核查确认，质检审核人员仅负责只读审计，不构成串行审批。</div>
         </form>
-        <p class="login-security">请勿在公共设备保存密码　·　连续登录失败将触发安全限制</p>
+        <p class="login-security">仅用于合成数据演示　·　生产环境应接入统一身份认证</p>
       </section>
     </main>
     <footer v-if="!identity" class="public-footer">© 2026 客户服务运营平台 <span>内部演示环境　|　合成数据　|　技术支持</span></footer>

@@ -2,10 +2,7 @@ import { test, expect } from '@playwright/test'
 
 async function login(page, actor) {
   await page.getByLabel('岗位身份').selectOption(actor)
-  const password = process.env[`DEMO_${actor.toUpperCase()}_PASSWORD`]
-  if (!password) throw new Error(`Missing DEMO_${actor.toUpperCase()}_PASSWORD`)
-  await page.getByLabel('登录密码').fill(password)
-  await page.getByRole('button', { name: '登录并进入工单' }).click()
+  await page.getByRole('button', { name: '登录', exact: true }).click()
   await expect(page.locator('.host-identity strong')).toHaveText(actor)
 }
 

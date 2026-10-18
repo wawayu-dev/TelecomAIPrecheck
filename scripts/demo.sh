@@ -7,7 +7,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
   (umask 077; python3 - "$ENV_FILE" <<'PY'
 import secrets,sys
 from pathlib import Path
-lines=['MYSQL_PORT=13307','DB_USERNAME=precheck','SERVER_PORT=8080','SPRING_PROFILES_ACTIVE=mysql']
+lines=['MYSQL_PORT=13307','DB_USERNAME=precheck','SERVER_PORT=8080','SPRING_PROFILES_ACTIVE=mysql','DEMO_ONE_CLICK_LOGIN=true']
 for name in ['DB_PASSWORD','MYSQL_ROOT_PASSWORD','DEMO_OPERATOR_PASSWORD','DEMO_REVIEWER_PASSWORD','DEMO_AUDITOR_PASSWORD','DEMO_HOST_PASSWORD']:
     lines.append(name+'='+secrets.token_urlsafe(24))
 Path(sys.argv[1]).write_text('\n'.join(lines)+'\n')
@@ -18,6 +18,7 @@ fi
 set -a
 source "$ENV_FILE"
 set +a
+export DEMO_ONE_CLICK_LOGIN="${DEMO_ONE_CLICK_LOGIN:-true}"
 export DB_URL="jdbc:mysql://127.0.0.1:${MYSQL_PORT}/telecom_ai_precheck?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false"
 compose=(docker compose --env-file "$ENV_FILE" -p telecom-ai-precheck-demo -f "$ROOT/docs/TelecomAIPrecheck/docker-compose.yml")
 case "${1:-help}" in

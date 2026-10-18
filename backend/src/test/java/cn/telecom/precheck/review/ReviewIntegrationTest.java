@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
-@SpringBootTest(properties={"DEMO_REVIEWER_PASSWORD=reviewer-test-password"})
+@SpringBootTest(properties={"DEMO_REVIEWER_PASSWORD=reviewer-test-password","precheck.demo-login.enabled=true"})
 @AutoConfigureMockMvc @ActiveProfiles("mysql")
 @EnabledIfEnvironmentVariable(named="RUN_MYSQL_TESTS",matches="true")
 @WithMockUser(username="reviewer",roles={"OPERATOR","REVIEWER","AUDITOR"})
@@ -230,5 +230,18 @@ class ReviewIntegrationTest {
             .andExpect(jsonPath("$.roles[0]").value("ROLE_REVIEWER"))
             .andExpect(jsonPath("$.csrfToken").isNotEmpty());
         mvc.perform(get("/api/session").with(httpBasic("reviewer","wrong"))).andExpect(status().isUnauthorized());
+    }
+    @Test @WithAnonymousUser void demoRoleSelectionCreatesAuthenticatedSessionWithoutPassword() throws Exception {
+        var result=mvc.perform(post("/api/demo-session").contentType("application/json")
+                .content("{\"account\":\"auditor\"}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.actorId").value("auditor"))
+            .andExpect(jsonPath("$.roles[0]").value("ROLE_AUDITOR"))
+            .andExpect(jsonPath("$.csrfToken").isNotEmpty()).andReturn();
+        var session=(org.springframework.mock.web.MockHttpSession)result.getRequest().getSession(false);
+        mvc.perform(get("/api/session").session(session)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.actorId").value("auditor"));
+        mvc.perform(post("/api/demo-session").contentType("application/json")
+                .content("{\"account\":\"admin\"}"))
+            .andExpect(status().isBadRequest());
     }
 }
