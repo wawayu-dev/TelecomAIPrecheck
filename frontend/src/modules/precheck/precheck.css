@@ -230,6 +230,44 @@
 .history-disclosure>summary { color:#356b96; font-weight:600; }
 .history-disclosure .history-select { margin-top:10px; }
 
+/* Reviewer task flow: issue first, evidence dominant, decision secondary. */
+.reviewer-title { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin-bottom:8px; padding:3px 2px 12px; border-bottom:1px solid #cbd4dc; }
+.reviewer-title>div>span { display:block; margin-bottom:2px; color:#657987; font-size:10px; }
+.reviewer-title h1 { color:#213746; font-size:24px; }
+.complaint-summary { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:11px 2px 15px; }
+.complaint-summary p { color:#415462; font-size:12px; line-height:1.7; }
+.complaint-summary p span { margin-right:8px; color:#7b8993; font-size:10px; font-weight:600; }
+.complaint-summary .text-button { flex:none; }
+.reviewer-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin-bottom:16px; background:#fff; border:1px solid #cfd7dd; }
+.reviewer-metrics>div { min-height:76px; padding:13px 18px; }
+.reviewer-metrics>div+div { border-left:1px solid #dde3e7; }
+.reviewer-metrics span { display:block; margin-bottom:4px; color:#7b8993; font-size:10px; }
+.reviewer-metrics strong { color:#273f50; font-size:18px; font-weight:600; }
+.reviewer-metrics .metric-warning { color:#8a5f1b; }
+.reviewer-main { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:16px; align-items:start; }
+.reviewer-primary { display:flex; min-width:0; flex-direction:column; gap:16px; }
+.reviewer-main .panel-heading { min-height:48px; padding:9px 16px; background:#fff; }
+.reviewer-main .panel-heading h2 { font-size:15px; }
+.reviewer-main .human-panel { position:sticky; top:58px; }
+.reviewer-main .human-panel .panel-heading { background:#f7f9fa; }
+.reviewer-main .human-panel .panel-body { padding:10px 16px 16px; }
+.reviewer-main .review-form>label { margin-top:10px; }
+.reviewer-main .review-form textarea { min-height:64px; }
+.reviewer-main .review-buttons { flex-direction:column; }
+.reviewer-main .review-buttons button { width:100%; }
+.ai-assistance { padding:15px 17px; background:#fff; border:1px solid #d5dce1; }
+.ai-assistance-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.ai-assistance-title h2 { font-size:14px; }
+.ai-assistance-title span { color:#74838e; font-size:10px; }
+.ai-quiet-state,.ai-fallback { color:#697985; font-size:11px; }
+.ai-fallback { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; background:#f8f6ef; border-left:2px solid #c7aa70; }
+.ai-fallback .text-button { flex:none; }
+.compact-ai-output { display:grid; gap:10px; }
+.compact-ai-output .recommendation { padding:7px 9px; }
+.ai-assistance .key-findings { margin-top:11px; padding-top:10px; }
+.reviewer-history { margin-top:16px; border:0; border-top:1px solid #d5dce1; background:transparent; }
+.reviewer-history>summary { color:#667987; font-weight:500; }
+
 .audit-summary-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:14px; }
 .audit-summary-card { min-height:122px; padding:16px 18px; background:#fff; border:1px solid #cfd7dd; border-top:3px solid #4885b6; }
 .audit-summary-card>span { color:#71818d; font-size:10px; }
@@ -258,8 +296,9 @@
 .auditor-history button.active { color:#1f659c; border-color:#7ba9ce; }
 
 @media(max-width:980px) {
-  .operator-layout,.reviewer-grid { grid-template-columns:1fr; }
+  .operator-layout,.reviewer-grid,.reviewer-main { grid-template-columns:1fr; }
   .reviewer-grid .result-panel,.reviewer-grid .compact-evidence,.reviewer-grid .human-panel { grid-column:1; grid-row:auto; }
+  .reviewer-main .human-panel { position:static; }
   .audit-summary-grid { grid-template-columns:1fr; }
 }
 @media(max-width:760px) {
@@ -271,8 +310,11 @@
   .complaint-field { margin:10px 14px 0; }
   .form-actions { padding:12px 14px; }
   .operator-status-panel { display:none; }
-  .reviewer-overview { grid-template-columns:1fr auto; gap:9px; }
-  .reviewer-overview>div:nth-child(2) { display:none; }
+  .reviewer-title h1 { font-size:20px; }
+  .reviewer-metrics { grid-template-columns:1fr; }
+  .reviewer-metrics>div { min-height:58px; padding:9px 13px; }
+  .reviewer-metrics>div+div { border-top:1px solid #dde3e7; border-left:0; }
+  .reviewer-metrics strong { font-size:15px; }
   .evidence-disclosure>summary { grid-template-columns:minmax(0,1fr) auto; }
   .evidence-disclosure>summary em { display:none; }
   .audit-result-body>dl { grid-template-columns:1fr; gap:3px; }

@@ -64,10 +64,10 @@ describe('预审业务模块', () => {
     const failed=view(); failed.run.callStatus='FAILED'; failed.run.taskStatus='FAILED'; failed.run.failureCode='MODEL_TIMEOUT'; failed.result=null
     const {wrapper,host}=setup('REVIEWER',failed); await flushPromises()
     expect(wrapper.find('form').exists()).toBe(true)
-    await button(wrapper,'重新执行系统核查').trigger('click'); await flushPromises()
+    await button(wrapper,'重新执行').trigger('click'); await flushPromises()
     expect(host.api.retry).toHaveBeenCalledWith('run-1',1)
     expect(wrapper.text()).toContain('已授权重新执行 AI 核查')
-    expect(wrapper.text()).toContain('系统正在准备核查材料')
+    expect(wrapper.text()).toContain('系统正在准备核查建议')
   })
   it('默认读取后端判定的当前有效版本，旧版本仅可追溯', async () => {
     const current=view('DEMO-001','PENDING_REVIEW','run-current')

@@ -36,8 +36,8 @@ describe('按岗位隔离的工作台', () => {
 
   it('投诉专员直接查看自动核查结果并处理，不读取审计日志', async () => {
     const { wrapper, host } = setup('REVIEWER'); await flushPromises()
-    expect(wrapper.text()).toContain('核查建议')
-    expect(wrapper.text()).toContain('业务凭据')
+    expect(wrapper.text()).toContain('AI 辅助意见')
+    expect(wrapper.text()).toContain('核查材料')
     expect(wrapper.find('.review-form').exists()).toBe(true)
     expect(host.api.current).toHaveBeenCalledTimes(1)
     expect(host.api.timeline).not.toHaveBeenCalled()
