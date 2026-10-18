@@ -10,3 +10,7 @@ frontend/coverage/
 .env.*
 !.env.example
 *.log
+
+# 浏览器验收产物（可能包含业务页面）
+frontend/test-results/
+frontend/playwright-report/

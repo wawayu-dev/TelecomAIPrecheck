@@ -88,3 +88,7 @@ GitHub Actions 在 push、pull_request 或手动触发时构建，后端任务�
 ## 持久化演示与人工审核（Issue #3）
 
 建议使用仓库根目录的 `scripts/demo.sh up` 和 `scripts/demo.sh backend`。脚本自动生成本机随机密码，使用 MySQL 8.4、独立端口 13307 与持久卷；`stop` 不删除卷。mysql profile 业务接口现在需要角色认证与写请求 CSRF。完整步骤见 [Issue #3 契约](../issue-3-review.md)。旧的匿名 curl 预审示例需要改为携带认证及 CSRF，或运行 `python3 scripts/demo-smoke.py`。
+
+## 预审业务页面（Issue #4）
+
+启动上述 MySQL 后端后，在 frontend 下运行 `npm ci`、`npm run dev`，打开 http://127.0.0.1:5173 。使用本机 .env 中的演示密码登录。页面已实现预审、人工确认/驳回和审计。自定义 DB_URL 请使用 `connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`，避免旧 serverTimezone 设置造成时间线偏移。完整接入说明见 [Issue #4](../issue-4-integration.md)。

@@ -58,7 +58,8 @@ class ReviewIntegrationTest {
         assertThat(review.actorId()).isEqualTo("reviewer");
         assertThat(review.decision()).isEqualTo(decision.name());
         assertThat(review.version()).isEqualTo(2);
-        assertThat(review.reviewedAt()).isNotNull();
+        assertThat(review.reviewedAt()).isBetween(java.time.Instant.now().minusSeconds(30),java.time.Instant.now().plusSeconds(2));
+        assertThat(original.run().createdAt()).isBetween(java.time.Instant.now().minusSeconds(30),java.time.Instant.now().plusSeconds(2));
         assertThat(runs.find(id).status()).isEqualTo("REVIEWED");
         assertThat(prechecks.get(id).evidenceSnapshot()).isEqualTo(original.evidenceSnapshot());
         assertThat(runs.find(id).failureCode()).isEqualTo("MODEL_TIMEOUT");
@@ -67,6 +68,7 @@ class ReviewIntegrationTest {
         assertThat(events).extracting(AuditEvent::runVersion).containsExactly(0,1,2);
         assertThat(events).allSatisfy(e -> { assertThat(e.snapshotRunId()).isEqualTo(id); assertThat(e.promptVersion()).isEqualTo(PromptCatalog.VERSION); });
         assertThat(events.get(2).traceId()).isEqualTo("review-trace");
+        assertThat(events.get(2).occurredAt()).isBetween(java.time.Instant.now().minusSeconds(30),java.time.Instant.now().plusSeconds(2));
         assertThat(events.get(2).fromStatus()).isEqualTo("PENDING_REVIEW");
         assertThat(events.get(2).toStatus()).isEqualTo("REVIEWED");
         assertThat(service.audit(id,events.get(1).id(),1)).hasSize(1);
@@ -199,6 +201,19 @@ class ReviewIntegrationTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$[2].runVersion").value(2));
         mvc.perform(get("/api/ai-prechecks/{id}/audit?limit=101",id)).andExpect(status().isBadRequest());
         mvc.perform(get("/api/ai-prechecks/{id}/audit",UUID.randomUUID())).andExpect(status().isNotFound());
+    }
+    @Test @WithAnonymousUser void hostLogoutInvalidatesSessionAndRequiresCsrf() throws Exception {
+        var result=mvc.perform(get("/api/session").with(httpBasic("reviewer","reviewer-test-password")))
+            .andExpect(status().isOk()).andReturn();
+        var session=(org.springframework.mock.web.MockHttpSession)result.getRequest().getSession(false);
+        mvc.perform(post("/api/session/logout").session(session).with(httpBasic("reviewer","reviewer-test-password")))
+            .andExpect(status().isForbidden());
+        assertThat(session.isInvalid()).isFalse();
+        mvc.perform(post("/api/session/logout").session(session).with(csrf()).with(httpBasic("reviewer","reviewer-test-password")))
+            .andExpect(status().isNoContent()).andExpect(cookie().maxAge("JSESSIONID",0));
+        assertThat(session.isInvalid()).isTrue();
+        mvc.perform(get("/api/session").header("X-Requested-With","XMLHttpRequest").with(httpBasic("reviewer","wrong")))
+            .andExpect(status().isUnauthorized()).andExpect(header().doesNotExist("WWW-Authenticate"));
     }
     @Test @WithAnonymousUser void demoBasicLoginReturnsIdentityAndCsrf() throws Exception {
         mvc.perform(get("/api/session").with(httpBasic("reviewer","reviewer-test-password")))

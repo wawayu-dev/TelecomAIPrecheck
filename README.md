@@ -169,17 +169,18 @@ public interface TicketContextProvider {
 - [x] Spring AI + 讯飞 MaaS 真实联调（spark-x2.5，合成工单）
 - [x] 结构化预审、证据校验与异常兜底（自动化测试及真实 MaaS 单样本联调通过）
 - [x] 人工审核、状态约束及审计事件（MySQL 事务、乐观锁、角色校验）
-- [ ] Vue 3 单页与模拟宿主路由接入
+- [x] Vue 3 单页与模拟宿主路由接入（预审、人工复核、审计时间线）
 - [ ] 关键自动化测试与合成样本评测
 - [ ] Docker 部署与健康检查
 - [ ] 集成说明、运行截图及演示录屏
 
 ### 本地运行
 
-当前可运行只读 Mock 上下文演示，无需数据库或模型密钥：
+完整业务页面使用持久化 MySQL 与宿主演示身份；未配置模型时可验证失败转人工：
 
 ```sh
-mvn -f backend/pom.xml spring-boot:run
+scripts/demo.sh up
+scripts/demo.sh backend
 # 另开终端
 cd frontend
 npm ci
@@ -193,12 +194,14 @@ npm run dev
 - [启动、环境变量与 MySQL 配置](docs/TelecomAIPrecheck/README.md)
 - [Issue #1 测试记录](docs/issue-1-validation.md)
 
-Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。启用 mysql profile 后提供预审 API 和独立快照表；模型调用须配置讯飞凭据。人工审核后端及三个角色的演示账号已实现，前端仍为只读联调页，审核页面将在 Issue #4 实现。
+Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启动 MySQL。启用 mysql profile 后提供预审 API 和独立快照表；模型调用须配置讯飞凭据。已提供预审、人工复核与审计单页。演示密码位于本机 `docs/TelecomAIPrecheck/.env`，登录一次后由模块复用宿主身份。默认 mock profile 仍只提供只读上下文 API，完整页面需启用 mysql profile。
 
 - [Issue #2 API、模型配置与数据设计](docs/issue-2-precheck.md)
 - [Issue #2 验证记录](docs/issue-2-validation.md)
 - [Issue #3 人工审核、权限、审计与持久化演示](docs/issue-3-review.md)
 - [Issue #3 测试记录](docs/issue-3-validation.md)
+- [Issue #4 页面与宿主集成指南](docs/issue-4-integration.md)
+- [Issue #4 测试与浏览器验收](docs/issue-4-validation.md)
 
 ## 11. 项目定位与声明
 

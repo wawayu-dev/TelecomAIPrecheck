@@ -18,7 +18,7 @@ fi
 set -a
 source "$ENV_FILE"
 set +a
-export DB_URL="jdbc:mysql://127.0.0.1:${MYSQL_PORT}/telecom_ai_precheck?serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false"
+export DB_URL="jdbc:mysql://127.0.0.1:${MYSQL_PORT}/telecom_ai_precheck?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false"
 compose=(docker compose --env-file "$ENV_FILE" -p telecom-ai-precheck-demo -f "$ROOT/docs/TelecomAIPrecheck/docker-compose.yml")
 case "${1:-help}" in
   up) "${compose[@]}" up -d --wait ;;

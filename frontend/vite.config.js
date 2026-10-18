@@ -12,6 +12,6 @@ export default defineConfig(({ mode }) => {
         '/actuator': { target: env.BACKEND_URL || 'http://127.0.0.1:8080' },
       },
     },
-    test: { environment: 'jsdom', clearMocks: true },
+    test: { environment: 'jsdom', clearMocks: true, include: ['src/**/*.test.js'] },
   }
 })

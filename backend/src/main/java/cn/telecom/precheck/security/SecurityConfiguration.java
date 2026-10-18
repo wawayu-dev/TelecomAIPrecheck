@@ -39,9 +39,13 @@ public class SecurityConfiguration {
                 .anyRequest().hasAnyRole("OPERATOR","REVIEWER","AUDITOR"))
             .httpBasic(b -> b.authenticationEntryPoint((req,res,e) -> {
                 res.setStatus(401); res.setContentType("application/json;charset=UTF-8");
-                res.setHeader("WWW-Authenticate", "Basic realm=precheck");
+                if (!"XMLHttpRequest".equals(req.getHeader("X-Requested-With")))
+                    res.setHeader("WWW-Authenticate", "Basic realm=precheck");
                 json.writeValue(res.getWriter(),new ApiError("UNAUTHENTICATED","请先登录",(String)req.getAttribute("traceId")));
             }))
+            .logout(l -> l.logoutUrl("/api/session/logout")
+                .invalidateHttpSession(true).deleteCookies("JSESSIONID")
+                .logoutSuccessHandler((req,res,auth) -> res.setStatus(204)))
             .exceptionHandling(e -> e.accessDeniedHandler((req,res,ex) -> {
                 res.setStatus(403); res.setContentType("application/json;charset=UTF-8");
                 json.writeValue(res.getWriter(),new ApiError("FORBIDDEN","无权限或 CSRF 校验失败",(String)req.getAttribute("traceId")));

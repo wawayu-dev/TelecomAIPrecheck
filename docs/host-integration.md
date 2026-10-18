@@ -48,7 +48,7 @@ TicketContextProvider ticketContextProvider(HostTicketService service) {
 - 400 INVALID_REQUEST；404 TICKET_NOT_FOUND/RESOURCE_NOT_FOUND；405 METHOD_NOT_ALLOWED；503 CONTEXT_UNAVAILABLE；500 INTERNAL_ERROR。
 - 不回显异常原文、SQL、密钥或堆栈；当前 Trace ID 是请求关联 ID，不是完整分布式链路实现。
 
-开发时 Vite 代理 `/api`、`/actuator` 至后端，不使用宽泛 CORS。正式 Vue Router 模块挂载、宿主身份复用、结果回交在 Issue #4 验证；预审和审核后端已实现，见各阶段契约。
+开发时 Vite 代理 `/api`、`/actuator` 至后端，不使用宽泛 CORS。Vue Router 模块挂载与宿主身份复用已在 Issue #4 验证；人工结果通过既有查询 API 提供给宿主，不写宿主表。见 [前端模块集成](issue-4-integration.md)。
 
 ## 已实现的状态设计
 
