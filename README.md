@@ -171,6 +171,7 @@ public interface TicketContextProvider {
 - [x] 人工审核、状态约束及审计事件（MySQL 事务、乐观锁、角色校验）
 - [x] Vue 3 单页与模拟宿主路由接入（预审、人工复核、审计时间线）
 - [x] 工单流转事件驱动的异步 AI 预处理（数据库幂等、有限重试、崩溃恢复）
+- [x] 接单即用的 AI 核查工作台（当前有效结果、轻量轮询、专员确认、统一审计时间线）
 - [ ] 关键自动化测试与合成样本评测
 - [ ] Docker 部署与健康检查
 - [ ] 集成说明、运行截图及演示录屏
@@ -204,6 +205,7 @@ Compose 文件位于 `docs/TelecomAIPrecheck/docker-compose.yml`，当前仅启�
 - [Issue #4 页面与宿主集成指南](docs/issue-4-integration.md)
 - [Issue #4 测试与浏览器验收](docs/issue-4-validation.md)
 - [Issue #6 异步预处理事件契约与运行机制](docs/issue-6-async-precheck.md)
+- [接单即用工作台、权限契约与三面演示流程](docs/issue-7-workbench.md)
 
 ## 11. 项目定位与声明
 

@@ -8,15 +8,19 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import java.util.List;
+import com.fasterxml.jackson.databind.*;
 
 @Service @Profile("mysql") @Validated
 public class ReviewService {
     private final PrecheckMapper runs;
     private final ReviewMapper reviews;
     private final AuditMapper audits;
-    public ReviewService(PrecheckMapper runs, ReviewMapper reviews, AuditMapper audits) {
-        this.runs=runs; this.reviews=reviews; this.audits=audits;
+    private final ObjectMapper json;
+    public ReviewService(PrecheckMapper runs, ReviewMapper reviews, AuditMapper audits, ObjectMapper json) {
+        this.runs=runs; this.reviews=reviews; this.audits=audits; this.json=json;
     }
+    public record ReviewChange(JsonNode aiResult, Review humanResult) {}
+    public record TimelineItem(AuditEvent event, ReviewChange reviewChange) {}
     @Transactional
     @PreAuthorize("hasRole('REVIEWER')")
     public Review submit(String id, @Valid ReviewRequest request, String trace) {
@@ -39,6 +43,20 @@ public class ReviewService {
     public List<AuditEvent> audit(String id,long after,int limit) {
         if(runs.find(id)==null) throw new PrecheckNotFoundException();
         return audits.list(id,after,limit);
+    }
+    @PreAuthorize("hasAnyRole('REVIEWER','AUDITOR')")
+    public List<TimelineItem> timeline(String id,long after,int limit) {
+        var run=runs.find(id);
+        if(run==null) throw new PrecheckNotFoundException();
+        var review=reviews.find(id);
+        JsonNode original=decode(run.resultJson());
+        return audits.list(id,after,limit).stream().map(event -> new TimelineItem(event,
+                event.action().startsWith("REVIEW_") && review!=null
+                        ? new ReviewChange(original,review) : null)).toList();
+    }
+    private JsonNode decode(String value) {
+        try { return value == null ? null : json.readTree(value); }
+        catch (Exception invalid) { throw new IllegalStateException("Stored JSON invalid"); }
     }
     static String mask(String text) {
         return text.replaceAll("(?<![0-9])[0-9]{17}[0-9Xx](?![0-9])","[身份证已脱敏]")

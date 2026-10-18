@@ -4,6 +4,8 @@ import argparse
 import base64
 import http.cookiejar
 import json
+import time
+import uuid
 from pathlib import Path
 import urllib.request
 import urllib.error
@@ -11,13 +13,14 @@ import urllib.error
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--verify-run', help='仅验证持久化记录，不触发模型或新增审核')
+parser.add_argument('--base-url', help='覆盖后端地址，例如 http://127.0.0.1:18081')
 args = parser.parse_args()
 settings = {}
 for line in (root / 'docs/TelecomAIPrecheck/.env').read_text().splitlines():
     if line.strip() and not line.lstrip().startswith('#'):
         key, value = line.split('=', 1)
         settings[key] = value.strip().strip("\"'")
-base = 'http://127.0.0.1:' + settings.get('SERVER_PORT', '8080')
+base = args.base_url or ('http://127.0.0.1:' + settings.get('SERVER_PORT', '8080'))
 
 class Client:
     def __init__(self, role):
@@ -46,8 +49,18 @@ if args.verify_run:
     run_id = args.verify_run
 else:
     operator = Client('operator'); operator.session()
-    run = operator.call('/api/ai-prechecks/tickets/DEMO-001', {}, 201)
-    assert run['run']['status'] == 'PENDING_REVIEW'
+    transition = operator.call('/api/mock-host/tickets/DEMO-001/complaint-queue',
+                               {'eventId': 'DEMO-' + str(uuid.uuid4()), 'ticketVersion': int(time.time() * 1000000)})
+    assert transition['transitioned'] and transition['precheckAccepted']
+    run_id = transition['precheckRunId']
+    deadline = time.time() + 130
+    while True:
+        run = operator.call(f'/api/ai-prechecks/{run_id}')
+        if run['run']['status'] != 'ANALYZING':
+            break
+        if time.time() >= deadline:
+            raise RuntimeError('Timed out waiting for asynchronous precheck')
+        time.sleep(1)
     run_id = run['run']['id']
     reviewer = Client('reviewer'); reviewer.session()
     body = {'expectedVersion': run['run']['version'], 'decision': 'CONFIRMED',
@@ -62,10 +75,10 @@ auditor = Client('auditor')
 run = auditor.call(f'/api/ai-prechecks/{run_id}')
 review = auditor.call(f'/api/ai-prechecks/{run_id}/review')
 events = auditor.call(f'/api/ai-prechecks/{run_id}/audit')
+timeline = auditor.call(f'/api/ai-prechecks/{run_id}/timeline')
 assert run['run']['status'] == 'REVIEWED' and run['run']['version'] == 2
 assert review['decision'] == 'CONFIRMED'
-assert len(events) == 3
-assert [e['runVersion'] for e in events] == [0, 1, 2]
+assert len(events) >= 3 and timeline[-1]['reviewChange']['humanResult']['actorId'] == 'reviewer'
 print(json.dumps({'synthetic': True, 'runId': run_id, 'status': run['run']['status'],
                   'callStatus': run['run']['callStatus'], 'failureCode': run['run']['failureCode'],
                   'decision': review['decision'], 'auditActions': [e['action'] for e in events],

@@ -6,16 +6,18 @@ import { precheckHostKey } from './api'
 import { context, view, event } from './fixtures'
 const wrappers = []
 function setup(role = 'REVIEWER', initial = view()) {
-  let current = initial, saved = null
+  let current = initial, rows = initial ? [initial] : [], saved = null
   const host = { identity: shallowRef({ actorId: role.toLowerCase(), roles: ['ROLE_' + role] }), api: {
-    context: vi.fn(async ticket => context(ticket)), history: vi.fn(async () => current ? [current] : []),
-    run: vi.fn(async () => current), review: vi.fn(async () => saved), audit: vi.fn(async () => [event]),
-    start: vi.fn(async () => { current = view(); return current }),
-    submit: vi.fn(async (_id, body) => { saved = { ...body, actorId: 'reviewer', version: 2, reviewedAt: '2026-10-17T12:00:00Z' }; current = { ...current, run: { ...current.run, status: 'REVIEWED', version: 2 } }; return saved }),
+    context: vi.fn(async ticket => context(ticket)), history: vi.fn(async () => rows),
+    current: vi.fn(async () => current), run: vi.fn(async id => rows.find(item => item.run.id === id) || current), review: vi.fn(async () => saved),
+    timeline: vi.fn(async () => saved ? [{ event }, { event: { ...event, id: 2, action: 'REVIEW_CONFIRMED', actorId: 'reviewer', runVersion: 2 }, reviewChange: { aiResult: current.result, humanResult: saved } }] : [{ event }]),
+    start: vi.fn(async () => { current = view(); rows=[current]; return current }),
+    retry: vi.fn(async () => { current = { ...current, run: { ...current.run, status: 'ANALYZING', callStatus: 'PENDING', taskStatus: 'QUEUED', failureCode: null, version: current.run.version + 1 } }; rows=[current,...rows.filter(item=>item.run.id!==current.run.id)]; return current }),
+    submit: vi.fn(async (_id, body) => { saved = { ...body, actorId: 'reviewer', version: 2, reviewedAt: '2026-10-17T12:00:00Z' }; current = { ...current, run: { ...current.run, status: 'REVIEWED', version: 2 } }; rows=[current,...rows.filter(item=>item.run.id!==current.run.id)]; return saved }),
   } }
   const wrapper = mount(PrecheckPage, { props: { ticketId: 'DEMO-001' }, global: { provide: { [precheckHostKey]: host } } })
   wrappers.push(wrapper)
-  return { wrapper, host, setView(value) { current = value } }
+  return { wrapper, host, setView(value) { current = value; rows = value ? [value] : [] }, setHistory(value, effective = value[0] || null) { rows = value; current = effective } }
 }
 function button(wrapper, text) { return wrapper.findAll('button').find(b => b.text() === text) }
 afterEach(() => { wrappers.splice(0).forEach(w => w.unmount()); vi.useRealTimers() })
@@ -44,39 +46,61 @@ describe('预审业务模块', () => {
     expect(wrapper.text()).toContain('已确认')
     expect(wrapper.text()).toContain('人工修正摘要')
     expect(wrapper.text()).toContain('合成 AI 摘要')
+    expect(wrapper.text()).toContain('AI 原始材料')
+    expect(wrapper.text()).toContain('专员确认材料')
     expect(wrapper.find('form').exists()).toBe(false)
   })
   it('模型失败可人工驳回，不虚构 AI 结果', async () => {
-    const failed = view(); failed.run.callStatus = 'FAILED'; failed.run.failureCode = 'MODEL_TIMEOUT'; failed.result = null
+    const failed = view(); failed.run.callStatus = 'FAILED'; failed.run.taskStatus = 'FAILED'; failed.run.failureCode = 'MODEL_TIMEOUT'; failed.result = null
     const { wrapper, host } = setup('REVIEWER', failed); await flushPromises()
     expect(wrapper.text()).toContain('模型响应超时')
     expect(wrapper.text()).not.toContain('合成 AI 摘要')
     await wrapper.get('#review-summary').setValue('需继续调查')
     await wrapper.get('#review-reason').setValue('缺少核查材料')
-    await button(wrapper, '驳回预审').trigger('click'); await flushPromises()
+    await button(wrapper, '退回核查材料').trigger('click'); await flushPromises()
     expect(host.api.submit.mock.calls[0][1].decision).toBe('REJECTED')
     expect(wrapper.text()).toContain('已驳回')
   })
+  it('失败任务不阻塞人工填写，并允许有权限人员授权异步重试', async () => {
+    const failed=view(); failed.run.callStatus='FAILED'; failed.run.taskStatus='FAILED'; failed.run.failureCode='MODEL_TIMEOUT'; failed.result=null
+    const {wrapper,host}=setup('REVIEWER',failed); await flushPromises()
+    expect(wrapper.find('form').exists()).toBe(true)
+    await button(wrapper,'授权重新执行 AI 核查').trigger('click'); await flushPromises()
+    expect(host.api.retry).toHaveBeenCalledWith('run-1',1)
+    expect(wrapper.text()).toContain('已授权重新执行')
+    expect(wrapper.text()).toContain('后台正在准备核查材料')
+  })
+  it('默认读取后端判定的当前有效版本，旧版本仅可追溯', async () => {
+    const current=view('DEMO-001','PENDING_REVIEW','run-current')
+    const stale=view('DEMO-001','PENDING_REVIEW','run-stale'); stale.run.currentResult=false; stale.run.ticketVersion=1
+    current.run.ticketVersion=2
+    const {wrapper,setHistory}=setup('REVIEWER',current); await flushPromises()
+    setHistory([stale,current],current)
+    await button(wrapper,'刷新').trigger('click'); await flushPromises()
+    expect(wrapper.find('#precheck-round').element.value).toBe('run-current')
+    await wrapper.get('#precheck-round').setValue('run-stale'); await flushPromises()
+    expect(wrapper.text()).toContain('本轮材料已过期')
+    expect(wrapper.find('form').exists()).toBe(false)
+  })
   it('空摘要或依据不能驳回', async () => {
     const { wrapper, host } = setup(); await flushPromises()
-    await button(wrapper, '驳回预审').trigger('click')
+    await button(wrapper, '退回核查材料').trigger('click')
     expect(host.api.submit).not.toHaveBeenCalled()
-    expect(wrapper.get('[role=alert]').text()).toContain('请填写人工摘要和复核依据')
+    expect(wrapper.get('[role=alert]').text()).toContain('请填写核查摘要和核查意见')
   })
-  it('操作员只可发起预审，不读取受限审计', async () => {
+  it('操作员不再从工作台手动发起 AI，也不读取受限审计', async () => {
     const { wrapper, host } = setup('OPERATOR', null); await flushPromises()
-    let resolve; host.api.start.mockImplementation(() => new Promise(done => { resolve = done }))
-    await button(wrapper, '开始 AI 预审').trigger('click'); await button(wrapper, '正在预审…').trigger('click')
-    expect(host.api.start).toHaveBeenCalledTimes(1)
-    expect(host.api.audit).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('等待宿主工单事件')
+    expect(button(wrapper, '开始 AI 预审')).toBeUndefined()
+    expect(host.api.start).not.toHaveBeenCalled()
+    expect(host.api.timeline).not.toHaveBeenCalled()
     expect(wrapper.find('form').exists()).toBe(false)
-    resolve(view()); await flushPromises()
   })
   it('审计员只能查看，不能发起或审核', async () => {
     const { wrapper, host } = setup('AUDITOR'); await flushPromises()
     expect(button(wrapper, '开始 AI 预审')).toBeUndefined()
     expect(wrapper.find('form').exists()).toBe(false)
-    expect(host.api.audit).toHaveBeenCalledTimes(1)
+    expect(host.api.timeline).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('当前身份只读')
   })
   it('409 后刷新最新状态并保留编辑，禁止覆盖已完成审核', async () => {
@@ -130,7 +154,7 @@ describe('预审业务模块', () => {
   })
   it('审计查询失败不隐藏预审及人工内容', async () => {
     const { wrapper, host } = setup(); await flushPromises()
-    host.api.audit.mockRejectedValue({ code: 'REQUEST_FAILED' })
+    host.api.timeline.mockRejectedValue({ code: 'REQUEST_FAILED' })
     await button(wrapper, '刷新').trigger('click'); await flushPromises()
     expect(wrapper.text()).toContain('合成 AI 摘要')
     expect(wrapper.find('form').exists()).toBe(true)
@@ -144,7 +168,7 @@ describe('预审业务模块', () => {
   })
   it('进行中记录自动刷新，完成前不可审核', async () => {
     vi.useFakeTimers()
-    const data = view('DEMO-001', 'ANALYZING'); data.run.callStatus = 'RUNNING'; data.result = null
+    const data = view('DEMO-001', 'ANALYZING'); data.run.callStatus = 'RUNNING'; data.run.taskStatus = 'RUNNING'; data.result = null
     const { wrapper, setView } = setup('REVIEWER', data); await flushPromises()
     expect(wrapper.find('form').exists()).toBe(false)
     setView(view()); await vi.advanceTimersByTimeAsync(4000); await flushPromises()

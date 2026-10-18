@@ -89,6 +89,14 @@ public class PrecheckStore {
         return false;
     }
     @Transactional
+    public PrecheckRun reauthorize(String id, int expectedVersion, int maxAttempts, String traceId) {
+        if (mapper.find(id) == null) throw new PrecheckNotFoundException();
+        if (mapper.reauthorizeTask(id, expectedVersion, maxAttempts) != 1)
+            throw new PrecheckRetryConflictException();
+        append(id, CurrentActor.id(), "PRECHECK_RETRY_AUTHORIZED", "PENDING_REVIEW", "QUEUED", traceId);
+        return mapper.find(id);
+    }
+    @Transactional
     public void finish(String id, String callStatus, String actualModel, long durationMs,
                        String failureCode, String resultJson, String findingsJson) {
         if(mapper.finish(id, callStatus, actualModel, durationMs, failureCode, resultJson, findingsJson)==1) {

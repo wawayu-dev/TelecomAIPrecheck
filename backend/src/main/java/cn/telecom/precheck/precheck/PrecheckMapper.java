@@ -134,6 +134,9 @@ public interface PrecheckMapper {
     PrecheckRun find(String id);
     @Select("SELECT " + COLUMNS + " FROM ai_precheck_run WHERE ticket_id=#{ticketId} ORDER BY created_at DESC,id DESC LIMIT #{limit} OFFSET #{offset}")
     List<PrecheckRun> history(@Param("ticketId") String ticketId, @Param("limit") int limit, @Param("offset") int offset);
+    @Select("SELECT " + COLUMNS + " FROM ai_precheck_run WHERE ticket_id=#{ticketId} AND current_result=TRUE "
+            + "ORDER BY created_at DESC,id DESC LIMIT 1")
+    PrecheckRun findCurrent(String ticketId);
     @Select("SELECT context_json FROM ai_precheck_evidence_snapshot WHERE run_id=#{id}")
     String snapshotJson(String id);
 
@@ -146,4 +149,15 @@ public interface PrecheckMapper {
     int recoverInterrupted(String id);
     @Select("SELECT id FROM ai_precheck_run WHERE status='ANALYZING' AND trigger_type='MANUAL' AND created_at < TIMESTAMPADD(MINUTE,-5,UTC_TIMESTAMP(6)) ORDER BY created_at LIMIT 100")
     List<String> interruptedIds();
+
+    @Update("""
+        UPDATE ai_precheck_run SET status='ANALYZING',call_status='PENDING',task_status='QUEUED',
+          attempt_count=0,max_attempts=#{maxAttempts},actual_model=NULL,duration_ms=NULL,failure_code=NULL,
+          result_json=NULL,findings_json=NULL,completed_at=NULL,started_at=NULL,next_attempt_at=NULL,
+          updated_at=UTC_TIMESTAMP(6),version=version+1
+        WHERE id=#{id} AND version=#{expectedVersion} AND trigger_type='EVENT' AND current_result=TRUE
+          AND status='PENDING_REVIEW' AND task_status='FAILED'
+        """)
+    int reauthorizeTask(@Param("id") String id, @Param("expectedVersion") int expectedVersion,
+                        @Param("maxAttempts") int maxAttempts);
 }

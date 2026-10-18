@@ -5,10 +5,14 @@ export function createPrecheckApi(request) {
   return {
     context: (ticket, signal) => request(`/api/tickets/${id(ticket)}/context`, { signal }),
     history: (ticket, offset = 0, signal) => request(`${base}/tickets/${id(ticket)}?limit=20&offset=${offset}`, { signal }),
+    current: (ticket, signal) => request(`${base}/tickets/${id(ticket)}/current`, { signal }),
     run: (run, signal) => request(`${base}/${id(run)}`, { signal }),
     review: (run, signal) => request(`${base}/${id(run)}/review`, { signal }),
     audit: (run, after = 0, signal) => request(`${base}/${id(run)}/audit?limit=50&after=${after}`, { signal }),
+    timeline: (run, after = 0, signal) => request(`${base}/${id(run)}/timeline?limit=50&after=${after}`, { signal }),
     start: ticket => request(`${base}/tickets/${id(ticket)}`, { method: 'POST', body: {} }),
+    retry: (run, expectedVersion) => request(`${base}/${id(run)}/retry`, { method: 'POST', body: { expectedVersion } }),
+    transition: (ticket, body) => request(`/api/mock-host/tickets/${id(ticket)}/complaint-queue`, { method: 'POST', body }),
     submit: (run, body) => request(`${base}/${id(run)}/review`, { method: 'POST', body }),
   }
 }
@@ -21,6 +25,7 @@ export const messages = {
   CONTEXT_UNAVAILABLE: '宿主工单数据暂时不可用，请稍后重试。',
   INVALID_REQUEST: '请求内容不符合要求，请检查填写内容。',
   REVIEW_CONFLICT: '这条记录的状态或版本已变化，已尝试刷新最新结果。',
+  PRECHECK_RETRY_CONFLICT: '该任务已经恢复、被确认或不再是当前工单版本，请刷新查看。',
 }
 export function errorText(error) {
   return (messages[error?.code] || '请求未完成，请检查服务连接后重试。') + (error?.traceId ? ` 追踪编号：${error.traceId}` : '')

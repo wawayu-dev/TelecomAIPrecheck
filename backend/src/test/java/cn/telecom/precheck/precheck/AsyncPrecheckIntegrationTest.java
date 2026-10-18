@@ -86,6 +86,31 @@ class AsyncPrecheckIntegrationTest {
         assertThat(row.failureCode()).isEqualTo("MODEL_TIMEOUT");
     }
 
+    @Test @WithMockUser(username="reviewer",roles="REVIEWER")
+    void currentEndpointSkipsStaleVersionsAndFailedTaskCanBeAuthorizedAgain() throws Exception {
+        when(model.call(anyString(),anyString())).thenThrow(new PrecheckFailure(PrecheckFailure.Code.MODEL_TIMEOUT));
+        long oldVersion=version();
+        var old=async.accept(new TicketQueueEvent("EV-"+UUID.randomUUID(),"DEMO-001",oldVersion),"old");
+        var failed=async.accept(new TicketQueueEvent("EV-"+UUID.randomUUID(),"DEMO-001",oldVersion+1),"current");
+        await(() -> "RETRY_WAIT".equals(runs.find(failed.runId()).taskStatus()));
+        async.dispatch(failed.runId());
+        await(() -> "FAILED".equals(runs.find(failed.runId()).taskStatus()));
+        var before=runs.find(failed.runId());
+        assertThat(runs.find(old.runId()).currentResult()).isFalse();
+        mvc.perform(get("/api/ai-prechecks/tickets/DEMO-001/current"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.run.id").value(failed.runId()))
+                .andExpect(jsonPath("$.run.taskStatus").value("FAILED"));
+        doReturn(new PrecheckModel.Reply(Samples.VALID,"retry-model")).when(model).call(anyString(),anyString());
+        mvc.perform(post("/api/ai-prechecks/{id}/retry",failed.runId()).with(csrf())
+                        .contentType("application/json").content("{\"expectedVersion\":"+before.version()+"}"))
+                .andExpect(status().isAccepted()).andExpect(jsonPath("$.taskStatus").value("QUEUED"));
+        await(() -> "COMPLETED".equals(runs.find(failed.runId()).taskStatus()));
+        assertThat(runs.find(failed.runId()).attemptCount()).isEqualTo(1);
+        mvc.perform(post("/api/ai-prechecks/{id}/retry",failed.runId()).with(csrf())
+                        .contentType("application/json").content("{\"expectedVersion\":"+before.version()+"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PRECHECK_RETRY_CONFLICT"));
+    }
+
     @Test void newerTicketVersionMakesOldResultStaleAndEventIdsCannotBeReused() throws Exception {
         String firstEvent="EV-"+UUID.randomUUID();
         long oldVersion=version();

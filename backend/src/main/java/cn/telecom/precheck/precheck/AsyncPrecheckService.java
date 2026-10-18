@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Service
 @Profile("mysql")
@@ -40,6 +41,13 @@ public class AsyncPrecheckService {
                 event.ticketId(), event.ticketVersion(), model.modelId(), traceId, taskProperties.maxAttempts());
         if (queued.created()) dispatch(queued.run().id());
         return new Receipt(queued.run().id(), queued.run().taskStatus(), queued.created(), true);
+    }
+
+    @PreAuthorize("hasAnyRole('OPERATOR','REVIEWER')")
+    public Receipt retry(String id, int expectedVersion, String traceId) {
+        var queued = store.reauthorize(id, expectedVersion, taskProperties.maxAttempts(), traceId);
+        dispatch(id);
+        return new Receipt(id, queued.taskStatus(), false, true);
     }
 
     public void dispatch(String id) {

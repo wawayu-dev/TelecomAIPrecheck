@@ -72,6 +72,10 @@ class ReviewIntegrationTest {
         assertThat(events.get(2).fromStatus()).isEqualTo("PENDING_REVIEW");
         assertThat(events.get(2).toStatus()).isEqualTo("REVIEWED");
         assertThat(service.audit(id,events.get(1).id(),1)).hasSize(1);
+        var timeline=service.timeline(id,0,50);
+        assertThat(timeline).hasSize(3);
+        assertThat(timeline.get(2).reviewChange().aiResult()).isNull();
+        assertThat(timeline.get(2).reviewChange().humanResult().summary()).contains("人工核对");
     }
     @Test void successfulAiIsImmutableAfterHumanCorrection() {
         String id=UUID.randomUUID().toString();
@@ -82,6 +86,9 @@ class ReviewIntegrationTest {
         assertThat(prechecks.get(id).result().path("summary").asText()).isEqualTo("原始AI摘要");
         assertThat(service.get(id).summary()).contains("人工核对");
         assertThat(service.audit(id,0,50).get(2).model()).isEqualTo("actual-model");
+        var change=service.timeline(id,0,50).get(2).reviewChange();
+        assertThat(change.aiResult().path("summary").asText()).isEqualTo("原始AI摘要");
+        assertThat(change.humanResult().summary()).contains("人工核对");
     }
     @Test void analyzingStaleAndRepeatedReviewsAreRejected() {
         String id=UUID.randomUUID().toString();
@@ -199,6 +206,8 @@ class ReviewIntegrationTest {
         mvc.perform(get(url)).andExpect(status().isOk()).andExpect(jsonPath("$.decision").value("CONFIRMED"));
         mvc.perform(get("/api/ai-prechecks/{id}/audit",id).with(user("auditor").roles("AUDITOR")))
             .andExpect(status().isOk()).andExpect(jsonPath("$[2].runVersion").value(2));
+        mvc.perform(get("/api/ai-prechecks/{id}/timeline",id).with(user("auditor").roles("AUDITOR")))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[2].reviewChange.humanResult.actorId").value("reviewer"));
         mvc.perform(get("/api/ai-prechecks/{id}/audit?limit=101",id)).andExpect(status().isBadRequest());
         mvc.perform(get("/api/ai-prechecks/{id}/audit",UUID.randomUUID())).andExpect(status().isNotFound());
     }

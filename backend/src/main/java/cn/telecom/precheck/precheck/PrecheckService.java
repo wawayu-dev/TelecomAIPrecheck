@@ -42,6 +42,12 @@ public class PrecheckService {
         return mapper.history(ticketId, limit, offset).stream().map(row ->
                 new View(row, decode(row.resultJson()), decode(row.findingsJson()), null)).toList();
     }
+    @PreAuthorize("hasAnyRole('OPERATOR','REVIEWER','AUDITOR')")
+    public View current(String ticketId) {
+        var row = mapper.findCurrent(ticketId);
+        return row == null ? null : new View(row, decode(row.resultJson()), decode(row.findingsJson()),
+                decode(mapper.snapshotJson(row.id())));
+    }
     private com.fasterxml.jackson.databind.JsonNode decode(String value) {
         try { return value == null ? null : json.readTree(value); }
         catch (Exception invalid) { throw new IllegalStateException("Stored JSON invalid"); }

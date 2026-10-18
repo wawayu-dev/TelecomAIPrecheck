@@ -8,9 +8,9 @@ export function context(ticketId = 'DEMO-001') {
   }
 }
 export function view(ticketId = 'DEMO-001', status = 'PENDING_REVIEW', id = 'run-1') {
-  return { run: { id, ticketId, status, callStatus: 'SUCCESS', version: 1, promptVersion: 'charge-dispute-v1', requestedModel: 'test-model', actualModel: 'test-model', createdAt: '2026-10-17T10:00:00Z', durationMs: 100, traceId: 'trace-test' },
+  return { run: { id, ticketId, status, callStatus: 'SUCCESS', taskStatus: 'COMPLETED', attemptCount: 1, maxAttempts: 3, currentResult: true, eventId: 'EV-test', ticketVersion: 1, version: 1, promptVersion: 'charge-dispute-v1', requestedModel: 'test-model', actualModel: 'test-model', createdAt: '2026-10-17T10:00:00Z', durationMs: 100, traceId: 'trace-test' },
     result: { complaintType: 'VALUE_ADDED_CHARGE_DISPUTE', disputedAmount: 30, summary: '合成 AI 摘要', recommendation: 'VERIFY_AUTHORIZATION', evidenceIds: ['BILL-' + ticketId.slice(-3)] },
     findings: [{ code: 'AMOUNT_MISMATCH', evidenceIds: ['BILL-' + ticketId.slice(-3), 'ORDER-' + ticketId.slice(-3)] }], evidenceSnapshot: context(ticketId),
   }
 }
-export const event = { id: 1, action: 'PRECHECK_SUCCESS', actorId: 'system:model', fromStatus: 'ANALYZING', toStatus: 'PENDING_REVIEW', outcome: 'SUCCESS', runVersion: 1, traceId: 'trace-test', occurredAt: '2026-10-17T10:00:00Z', snapshotRunId: 'run-1', model: 'test-model', promptVersion: 'charge-dispute-v1' }
+export const event = { id: 1, action: 'PRECHECK_SUCCESS', actorId: 'system:model', fromStatus: 'ANALYZING', toStatus: 'PENDING_REVIEW', outcome: 'SUCCESS', runVersion: 1, traceId: 'trace-test', occurredAt: '2026-10-17T10:00:00Z', snapshotRunId: 'run-1', eventId: 'EV-test', ticketVersion: 1, durationMs: 100, errorType: null, model: 'test-model', promptVersion: 'charge-dispute-v1' }

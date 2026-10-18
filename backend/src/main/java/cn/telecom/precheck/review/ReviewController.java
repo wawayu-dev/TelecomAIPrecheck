@@ -21,4 +21,8 @@ public class ReviewController {
     public List<AuditEvent> audit(@PathVariable @Pattern(regexp="[a-f0-9-]{36}") String id,
             @RequestParam(defaultValue="0") @Min(0) long after,
             @RequestParam(defaultValue="50") @Min(1) @Max(100) int limit) { return service.audit(id,after,limit); }
+    @GetMapping("/timeline")
+    public List<ReviewService.TimelineItem> timeline(@PathVariable @Pattern(regexp="[a-f0-9-]{36}") String id,
+            @RequestParam(defaultValue="0") @Min(0) long after,
+            @RequestParam(defaultValue="50") @Min(1) @Max(100) int limit) { return service.timeline(id,after,limit); }
 }

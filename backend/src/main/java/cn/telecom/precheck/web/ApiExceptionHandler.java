@@ -50,6 +50,10 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiError> eventConflict(HttpServletRequest request) {
         return error(409, "EVENT_CONFLICT", "事件标识已用于其他工单版本", request);
     }
+    @ExceptionHandler(cn.telecom.precheck.precheck.PrecheckRetryConflictException.class)
+    ResponseEntity<ApiError> retryConflict(HttpServletRequest request) {
+        return error(409, "PRECHECK_RETRY_CONFLICT", "任务状态或版本已变化，请刷新后重试", request);
+    }
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     ResponseEntity<ApiError> denied(HttpServletRequest request) {
         return error(403, "FORBIDDEN", "当前身份无操作权限", request);
