@@ -31,18 +31,18 @@ public class PrecheckService {
                 outcome.durationMs(), outcome.failureCode(), outcome.resultJson(), outcome.findingsJson());
         return get(id);
     }
-    @PreAuthorize("hasAnyRole('OPERATOR','REVIEWER','AUDITOR')")
+    @PreAuthorize("hasAnyRole('REVIEWER','AUDITOR')")
     public View get(String id) {
         var row = mapper.find(id);
         if (row == null) throw new PrecheckNotFoundException();
         return new View(row, decode(row.resultJson()), decode(row.findingsJson()), decode(mapper.snapshotJson(id)));
     }
-    @PreAuthorize("hasAnyRole('OPERATOR','REVIEWER','AUDITOR')")
+    @PreAuthorize("hasAnyRole('REVIEWER','AUDITOR')")
     public List<View> history(String ticketId, int limit, int offset) {
         return mapper.history(ticketId, limit, offset).stream().map(row ->
                 new View(row, decode(row.resultJson()), decode(row.findingsJson()), null)).toList();
     }
-    @PreAuthorize("hasAnyRole('OPERATOR','REVIEWER','AUDITOR')")
+    @PreAuthorize("hasAnyRole('REVIEWER','AUDITOR')")
     public View current(String ticketId) {
         var row = mapper.findCurrent(ticketId);
         return row == null ? null : new View(row, decode(row.resultJson()), decode(row.findingsJson()),

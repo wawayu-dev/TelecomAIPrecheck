@@ -158,6 +158,14 @@ class ReviewIntegrationTest {
     @Test @WithMockUser(username="operator",roles="OPERATOR")
     void methodSecurityAlsoProtectsNonHttpCalls() {
         String id=pending();
+        assertThatThrownBy(() -> prechecks.get(id))
+            .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThatThrownBy(() -> prechecks.history("DEMO-001",20,0))
+            .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThatThrownBy(() -> prechecks.current("DEMO-001"))
+            .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThatThrownBy(() -> service.get(id))
+            .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
         assertThatThrownBy(() -> service.submit(id,request(1,ReviewRequest.Decision.CONFIRMED),"trace"))
             .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
         assertThatThrownBy(() -> service.audit(id,0,50))
@@ -190,6 +198,14 @@ class ReviewIntegrationTest {
         mvc.perform(post("/api/ai-prechecks/{id}/review",id).contentType("application/json").content(body)).andExpect(status().isForbidden());
         mvc.perform(post("/api/ai-prechecks/{id}/review",id).with(csrf()).contentType("application/json").content(body.substring(0,body.length()-1)+",\"actorId\":\"admin\"}")).andExpect(status().isBadRequest());
         mvc.perform(post("/api/ai-prechecks/tickets/DEMO-001").with(user("reviewer").roles("REVIEWER")).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(get("/api/ai-prechecks/{id}",id).with(user("operator").roles("OPERATOR"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/ai-prechecks/tickets/DEMO-001").with(user("operator").roles("OPERATOR"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/ai-prechecks/tickets/DEMO-001/current").with(user("operator").roles("OPERATOR"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/ai-prechecks/{id}/review",id).with(user("operator").roles("OPERATOR"))).andExpect(status().isForbidden());
+        mvc.perform(post("/api/ai-prechecks/{id}/retry",id).with(user("operator").roles("OPERATOR")).with(csrf())
+                .contentType("application/json").content("{\"expectedVersion\":1}")).andExpect(status().isForbidden());
+        mvc.perform(post("/api/ai-prechecks/{id}/review",id).with(user("auditor").roles("AUDITOR")).with(csrf())
+                .contentType("application/json").content(body)).andExpect(status().isForbidden());
         mvc.perform(get("/api/ai-prechecks/{id}/audit",id).with(user("operator").roles("OPERATOR"))).andExpect(status().isForbidden());
         assertThat(reviews.find(id)).isNull();
     }

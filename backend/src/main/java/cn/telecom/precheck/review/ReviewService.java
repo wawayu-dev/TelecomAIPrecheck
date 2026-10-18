@@ -34,7 +34,7 @@ public class ReviewService {
             throw new IllegalStateException("Audit write failed");
         return reviews.find(id);
     }
-    @PreAuthorize("hasAnyRole('OPERATOR','REVIEWER','AUDITOR')")
+    @PreAuthorize("hasAnyRole('REVIEWER','AUDITOR')")
     public Review get(String id) {
         if(runs.find(id)==null) throw new PrecheckNotFoundException();
         return reviews.find(id);

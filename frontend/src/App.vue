@@ -7,14 +7,18 @@ const host = inject(precheckHostKey)
 const route = useRoute()
 const identity = host.identity
 const account = ref('operator'), signing = ref(false), loginError = ref('')
-const transitioning = ref(false), transitionNotice = ref(''), transitionRevision = ref(0)
 const roles = { ROLE_OPERATOR: '客服受理人员', ROLE_REVIEWER: '投诉处理专员', ROLE_AUDITOR: '质检审核人员（只读）' }
 const currentTicket = computed(() => typeof route.params.ticketId === 'string' ? route.params.ticketId : '')
-const canTransition = computed(() => identity.value?.roles.includes('ROLE_OPERATOR') && currentTicket.value)
-const tickets = [{ id: 'DEMO-001', label: '视频会员扣费争议', note: '账单与授权材料齐全', level: '普通' }, { id: 'DEMO-002', label: '未确认的业务订购', note: '缺少授权凭据', level: '关注' }, { id: 'DEMO-003', label: '月费金额不一致', note: '账单与订购价格存在差异', level: '普通' }]
+const currentRole = computed(() => identity.value?.roles[0] || '')
+const roleUi = computed(() => ({
+  ROLE_OPERATOR: { nav: ['投诉登记', '我的工单'], heading: '我的投诉工单', count: '3', filter: ['全部', '处理中'], crumb: '投诉登记' },
+  ROLE_REVIEWER: { nav: ['核查待办', '处理中', '已完成'], heading: '核查待办', count: '3', filter: ['待处理', '全部'], crumb: '投诉核查' },
+  ROLE_AUDITOR: { nav: ['审计工作台', '抽检记录'], heading: '审计工单', count: '3', filter: ['近期处理', '全部'], crumb: '质量审计' },
+}[currentRole.value] || { nav: [], heading: '', count: '0', filter: [], crumb: '' }))
+const tickets = [{ id: 'DEMO-001', label: '视频会员扣费争议', note: '账单与授权材料齐全', level: '普通', status: '处理中' }, { id: 'DEMO-002', label: '未确认的业务订购', note: '缺少授权凭据', level: '关注', status: '待补充' }, { id: 'DEMO-003', label: '月费金额不一致', note: '账单与订购价格存在差异', level: '普通', status: '已完成' }]
 async function login() {
   if (signing.value) return
-  signing.value = true; loginError.value = ''; transitionNotice.value = ''
+  signing.value = true; loginError.value = ''
   try { await host.login(account.value) }
   catch (error) { loginError.value = error.status === 401 ? '演示身份登录未启用，请检查后端配置。' : errorText(error) }
   finally { signing.value = false }
@@ -24,18 +28,7 @@ async function logout() {
   signing.value = true; loginError.value = ''
   try { await host.logout() }
   catch { loginError.value = '本地身份已清除，服务端退出未确认。请重新登录。' }
-  finally { transitionNotice.value = ''; signing.value = false }
-}
-async function transitionTicket() {
-  if(transitioning.value || !canTransition.value) return
-  transitioning.value=true; transitionNotice.value=''
-  try {
-    const eventId=`WEB-${globalThis.crypto?.randomUUID?.() || Date.now()}`
-    const result=await host.api.transition(currentTicket.value,{ eventId,ticketVersion:Date.now()*1000 })
-    transitionNotice.value=result.precheckAccepted ? '工单已进入投诉队列，AI 核查任务已在后台接收。' : '工单已正常流转；AI 任务接入失败，可继续人工处理。'
-    transitionRevision.value++
-  } catch(error) { transitionNotice.value=errorText(error) }
-  finally { transitioning.value=false }
+  finally { signing.value = false }
 }
 </script>
 
@@ -55,13 +48,13 @@ async function transitionTicket() {
     </header>
 
     <template v-if="identity">
-      <nav class="business-nav" aria-label="主业务导航"><a>首页</a><a>客户视图</a><a class="active">投诉处理</a><a>业务查询</a><a>知识库</a><a>统计报表</a></nav>
+      <nav class="business-nav role-business-nav" aria-label="岗位业务导航"><a v-for="(item, index) in roleUi.nav" :key="item" :class="{ active: index === 0 }">{{ item }}</a></nav>
       <aside class="host-sidebar">
-        <div class="sidebar-heading"><strong>投诉工单</strong><span>待办 3</span></div>
-        <div class="sidebar-filter"><button class="active">我的待办</button><button>全部工单</button></div>
+        <div class="sidebar-heading"><strong>{{ roleUi.heading }}</strong><span>{{ roleUi.count }}</span></div>
+        <div class="sidebar-filter"><button v-for="(item, index) in roleUi.filter" :key="item" :class="{ active: index === 0 }">{{ item }}</button></div>
         <nav class="ticket-list" aria-label="宿主工单列表">
           <RouterLink v-for="ticket in tickets" :key="ticket.id" :to="`/host/tickets/${ticket.id}/precheck`" class="ticket-nav">
-            <div class="ticket-nav-top"><span class="ticket-type">费用争议</span><time>今日</time></div>
+            <div class="ticket-nav-top"><span class="ticket-type">{{ currentRole === 'ROLE_OPERATOR' ? ticket.status : currentRole === 'ROLE_AUDITOR' ? '已进入审计' : '待核查' }}</span><time>今日</time></div>
             <strong>{{ ticket.label }}</strong><p>{{ ticket.note }}</p>
             <div class="ticket-nav-bottom"><code>{{ ticket.id }}</code><span :class="{ attention: ticket.level === '关注' }">{{ ticket.level }}</span></div>
           </RouterLink>
@@ -71,11 +64,10 @@ async function transitionTicket() {
 
       <div class="host-main">
         <header class="host-topbar">
-          <div class="host-breadcrumb"><span>客户服务</span><i>/</i><span>投诉处理</span><i>/</i><strong>工单核查</strong><em>{{ currentTicket }}</em></div>
-          <div class="host-actions"><button class="plain-action" @click="$router.back()">返回</button><button v-if="canTransition" class="host-transition" :disabled="transitioning" @click="transitionTicket">{{ transitioning ? '正在流转…' : '流转至投诉队列' }}</button></div>
+          <div class="host-breadcrumb"><span>客户服务</span><i>/</i><strong>{{ roleUi.crumb }}</strong><em>{{ currentTicket }}</em></div>
+          <div class="host-actions"><button class="plain-action" @click="$router.back()">返回</button></div>
         </header>
-        <div v-if="transitionNotice" class="host-transition-notice" role="status"><strong>业务提示</strong>{{ transitionNotice }}</div>
-        <RouterView :key="`${route.fullPath}:${transitionRevision}`" />
+        <RouterView :key="route.fullPath" />
         <footer class="host-footer"><span>客户服务运营平台 · 智能核查辅助模块</span><span>数据分级：内部使用　|　操作全程留痕</span></footer>
       </div>
     </template>

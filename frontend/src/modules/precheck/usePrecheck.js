@@ -7,9 +7,9 @@ export function usePrecheck(ticketId, host) {
   const error = ref(''), auditError = ref(''), notice = ref(''), preservedDraft = ref(null)
   const draft = reactive({ summary: '', recommendation: 'MANUAL_REVIEW', reason: '' })
   const roles = computed(() => host.identity.value?.roles || [])
-  const canAudit = computed(() => roles.value.some(r => ['ROLE_REVIEWER', 'ROLE_AUDITOR'].includes(r)))
+  const canAudit = computed(() => roles.value.includes('ROLE_AUDITOR'))
   const canReview = computed(() => roles.value.includes('ROLE_REVIEWER') && selected.value?.run.currentResult !== false && selected.value?.run.status === 'PENDING_REVIEW' && !review.value)
-  const canRetry = computed(() => roles.value.some(r => ['ROLE_OPERATOR', 'ROLE_REVIEWER'].includes(r))
+  const canRetry = computed(() => roles.value.includes('ROLE_REVIEWER')
     && selected.value?.run.currentResult !== false && selected.value?.run.taskStatus === 'FAILED'
     && selected.value?.run.status === 'PENDING_REVIEW')
   const canStart = computed(() => roles.value.includes('ROLE_OPERATOR') && !!context.value && !history.value.some(v => ['ANALYZING', 'PENDING_REVIEW'].includes(v.run.status)))

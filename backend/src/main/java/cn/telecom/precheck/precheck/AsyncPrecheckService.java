@@ -43,7 +43,7 @@ public class AsyncPrecheckService {
         return new Receipt(queued.run().id(), queued.run().taskStatus(), queued.created(), true);
     }
 
-    @PreAuthorize("hasAnyRole('OPERATOR','REVIEWER')")
+    @PreAuthorize("hasRole('REVIEWER')")
     public Receipt retry(String id, int expectedVersion, String traceId) {
         var queued = store.reauthorize(id, expectedVersion, taskProperties.maxAttempts(), traceId);
         dispatch(id);
