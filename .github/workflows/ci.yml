@@ -1,7 +1,8 @@
-name: 基础构建与测试
+name: 版本标签构建与验收
 on:
   push:
-  pull_request:
+    tags:
+      - 'v*'
   workflow_dispatch:
 permissions:
   contents: read
@@ -87,6 +88,7 @@ jobs:
       DEMO_OPERATOR_PASSWORD: ci-operator-password
       DEMO_REVIEWER_PASSWORD: ci-reviewer-password
       DEMO_AUDITOR_PASSWORD: ci-auditor-password
+      DEMO_ONE_CLICK_LOGIN: 'true'
       BACKEND_URL: http://127.0.0.1:18081
       # CI 只验证失败转人工，不调用真实付费模型。
       XFYUN_API_KEY: ''
@@ -130,3 +132,58 @@ jobs:
           path: |
             frontend/playwright-report/
             frontend/test-results/
+
+  compose:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      MYSQL_PORT: '13307'
+      FRONTEND_PORT: '18088'
+      DB_USERNAME: precheck
+      DB_PASSWORD: ci-compose-password
+      MYSQL_ROOT_PASSWORD: ci-compose-root-password
+      DEMO_OPERATOR_PASSWORD: ci-operator-password
+      DEMO_REVIEWER_PASSWORD: ci-reviewer-password
+      DEMO_AUDITOR_PASSWORD: ci-auditor-password
+      DEMO_HOST_PASSWORD: ci-host-password
+      DEMO_ONE_CLICK_LOGIN: 'true'
+      PRECHECK_TASK_MAX_ATTEMPTS: '1'
+      XFYUN_API_KEY: ''
+      XFYUN_MODEL: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: 构建后端镜像（复用 BuildKit 缓存）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          load: true
+          tags: telecom-ai-precheck-backend:${{ github.ref_name }}
+          cache-from: type=gha,scope=telecom-precheck-backend
+          cache-to: type=gha,mode=max,scope=telecom-precheck-backend
+      - name: 构建前端镜像（复用 BuildKit 缓存）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend/Dockerfile
+          load: true
+          tags: telecom-ai-precheck-frontend:${{ github.ref_name }}
+          cache-from: type=gha,scope=telecom-precheck-frontend
+          cache-to: type=gha,mode=max,scope=telecom-precheck-frontend
+      - name: 校验 Compose 配置
+        run: docker compose -f docs/TelecomAIPrecheck/docker-compose.yml config --quiet
+      - name: 启动整栈镜像
+        run: docker compose -f docs/TelecomAIPrecheck/docker-compose.yml up -d --no-build --wait
+      - name: 验证前端、反向代理与后端健康检查
+        run: |
+          curl -fsS http://127.0.0.1:18088/ >/dev/null
+          curl -fsS http://127.0.0.1:18088/actuator/health | grep -q '"status":"UP"'
+      - name: 输出容器日志
+        if: failure()
+        run: docker compose -f docs/TelecomAIPrecheck/docker-compose.yml logs --no-color
+      - name: 停止验收环境
+        if: always()
+        run: docker compose -f docs/TelecomAIPrecheck/docker-compose.yml down -v

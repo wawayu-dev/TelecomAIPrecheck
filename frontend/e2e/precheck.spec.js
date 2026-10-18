@@ -6,12 +6,12 @@ async function login(page, actor) {
   await expect(page.locator('.host-identity strong')).toHaveText(actor)
 }
 
-test('桌面：宿主工单流转 → 自动预处理失败兜底 → 专员修正确认 → 审计查询', async ({ page }, info) => {
+test('桌面：新投诉流转 → 自动预处理失败兜底 → 专员修正确认 → 审计查询', async ({ page }, info) => {
   await page.setViewportSize({ width: 1440, height: 1050 })
   const errors = []; page.on('pageerror', error => errors.push(error.message))
-  await page.goto('/host/tickets/DEMO-003/precheck')
+  await page.goto('/host/tickets/DEMO-001/precheck')
   await login(page, 'operator')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('登记投诉工单')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('新建投诉')
   await expect(page.locator('.evidence-panel')).toHaveCount(0)
   await expect(page.locator('.result-panel')).toHaveCount(0)
   const accepted = page.waitForResponse(response => response.request().method() === 'POST' && response.url().includes('/api/mock-host/tickets/'))
@@ -21,13 +21,12 @@ test('桌面：宿主工单流转 → 自动预处理失败兜底 → 专员修�
   await expect(page.locator('.operator-status-panel')).toContainText('已提交 · 核查中')
   await page.getByRole('button', { name: '切换身份' }).click()
   await login(page, 'reviewer')
-  await expect(page).toHaveURL(/DEMO-003\/precheck$/)
+  await expect(page).toHaveURL(/DEMO-001\/precheck$/)
   await expect(page.locator('.result-panel')).toContainText('未完成')
   await expect(page.locator('.result-panel')).toContainText('模型未配置')
-  await expect(page.locator('.result-panel')).toContainText('账单与订购金额不一致')
-  await page.getByLabel('核查摘要').fill('合成演示：账单金额30元，订购月费20元，需核实计费差异。')
-  await page.getByLabel('处理建议', { exact: true }).selectOption('VERIFY_BILLING')
-  await page.getByLabel('核查意见').fill('根据 BILL-003 与 ORDER-003 核对，转业务人员核实，不执行退费。')
+  await page.getByLabel('核查摘要').fill('合成演示：已核对账单、订购与授权材料，仍需业务人员确认。')
+  await page.getByLabel('处理建议', { exact: true }).selectOption('MANUAL_REVIEW')
+  await page.getByLabel('核查意见').fill('根据现有证据完成材料核查，不执行退费。')
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: info.outputPath('review-before-confirm.png'), fullPage: true })
   await page.getByRole('button', { name: '确认核查材料', exact: true }).click()
@@ -45,9 +44,9 @@ test('桌面：宿主工单流转 → 自动预处理失败兜底 → 专员修�
   expect(errors).toEqual([])
 })
 
-test('窄屏：自动预处理缺少授权场景 → 专员退回，布局不横向溢出', async ({ page }, info) => {
+test('窄屏：新投诉自动预处理 → 专员退回，布局不横向溢出', async ({ page }, info) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/host/tickets/DEMO-002/precheck')
+  await page.goto('/host/tickets/DEMO-001/precheck')
   await login(page, 'operator')
   await expect(page.locator('.evidence-panel')).toHaveCount(0)
   const accepted = page.waitForResponse(response => response.request().method() === 'POST' && response.url().includes('/api/mock-host/tickets/'))
@@ -55,8 +54,8 @@ test('窄屏：自动预处理缺少授权场景 → 专员退回，布局不横
   const payload = await (await accepted).json(); expect(payload.precheckAccepted).toBe(true)
   await page.getByRole('button', { name: '切换身份' }).click()
   await login(page, 'reviewer')
-  await expect(page.locator('.compact-evidence')).toContainText('需进一步核实')
-  await page.getByLabel('核查摘要').fill('合成演示：授权凭据缺失，需要进一步补充材料。')
+  await expect(page.locator('.compact-evidence')).toContainText('授权记录')
+  await page.getByLabel('核查摘要').fill('合成演示：需要进一步补充业务核查材料。')
   await page.getByLabel('核查意见').fill('当前资料不足，不据此认定违规扣费。')
   await page.getByRole('button', { name: '要求补充材料' }).click()
   await expect(page.locator('.human-panel')).toContainText('待补充材料')

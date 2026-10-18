@@ -168,7 +168,7 @@
 @media(prefers-reduced-motion:reduce) { .spinner { animation:none; } }
 
 /* Role workspaces: keep each job focused on its own business task. */
-.role-workspace { width:100%; max-width:1460px; margin:0 auto; padding:18px 28px 32px; color:#283a49; font:14px/1.6 "Microsoft YaHei","PingFang SC",Arial,sans-serif; }
+.role-workspace { --blue:#075aa8; width:100%; max-width:1460px; margin:0 auto; padding:18px 28px 32px; color:#283a49; font:14px/1.6 "Microsoft YaHei","PingFang SC",Arial,sans-serif; }
 .role-workspace * { box-sizing:border-box; }
 .role-workspace h1,.role-workspace h2,.role-workspace p,.role-workspace dl { margin:0; }
 .role-workspace button,.role-workspace select,.role-workspace textarea,.role-workspace input { font:inherit; }
@@ -191,6 +191,10 @@
 .complaint-field small { position:absolute; right:9px; bottom:7px; color:#87939c; font-size:9px; font-weight:400; }
 .form-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding:15px 22px; background:#f8f9fa; border-top:1px solid #dde3e7; }
 .form-actions button { min-width:110px; padding:8px 18px; border:1px solid #bfcbd4; border-radius:2px; }
+.role-workspace .form-actions .primary { color:#fff !important; background:#075aa8 !important; border-color:#064e91 !important; box-shadow:0 1px 2px #063f7530; font-weight:600; }
+.role-workspace .form-actions .primary:hover:not(:disabled) { background:#064b8c !important; border-color:#043f78 !important; }
+.role-workspace .form-actions .primary:active:not(:disabled) { background:#043f78 !important; box-shadow:none; }
+.role-workspace .form-actions .primary:disabled { color:#fff !important; background:#7fa8cc !important; border-color:#729abd !important; opacity:.65; cursor:not-allowed; }
 .operator-status-panel dl { display:grid; grid-template-columns:82px 1fr; gap:11px 10px; padding:20px 18px; }
 .operator-status-panel dt { color:#7b8993; }
 .operator-status-panel dd { margin:0; overflow-wrap:anywhere; }

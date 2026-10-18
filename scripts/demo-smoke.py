@@ -20,7 +20,7 @@ for line in (root / 'docs/TelecomAIPrecheck/.env').read_text().splitlines():
     if line.strip() and not line.lstrip().startswith('#'):
         key, value = line.split('=', 1)
         settings[key] = value.strip().strip("\"'")
-base = args.base_url or ('http://127.0.0.1:' + settings.get('SERVER_PORT', '8080'))
+base = args.base_url or ('http://127.0.0.1:' + settings.get('FRONTEND_PORT', '8088'))
 
 class Client:
     def __init__(self, role):
@@ -53,16 +53,16 @@ else:
                                {'eventId': 'DEMO-' + str(uuid.uuid4()), 'ticketVersion': int(time.time() * 1000000)})
     assert transition['transitioned'] and transition['precheckAccepted']
     run_id = transition['precheckRunId']
+    reviewer = Client('reviewer'); reviewer.session()
     deadline = time.time() + 130
     while True:
-        run = operator.call(f'/api/ai-prechecks/{run_id}')
+        run = reviewer.call(f'/api/ai-prechecks/{run_id}')
         if run['run']['status'] != 'ANALYZING':
             break
         if time.time() >= deadline:
             raise RuntimeError('Timed out waiting for asynchronous precheck')
         time.sleep(1)
     run_id = run['run']['id']
-    reviewer = Client('reviewer'); reviewer.session()
     body = {'expectedVersion': run['run']['version'], 'decision': 'CONFIRMED',
             'summary': '合成演示：已核对账单，授权材料仍需人工复核。',
             'recommendation': 'VERIFY_AUTHORIZATION', 'reason': '仅确认人工处理建议，不执行退费。'}
