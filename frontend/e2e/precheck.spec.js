@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
 
 async function login(page, actor) {
-  await page.getByLabel('演示身份').selectOption(actor)
+  await page.getByLabel('岗位身份').selectOption(actor)
   const password = process.env[`DEMO_${actor.toUpperCase()}_PASSWORD`]
   if (!password) throw new Error(`Missing DEMO_${actor.toUpperCase()}_PASSWORD`)
-  await page.getByLabel('账户密码').fill(password)
+  await page.getByLabel('登录密码').fill(password)
   await page.getByRole('button', { name: '登录并进入工单' }).click()
   await expect(page.locator('.host-identity strong')).toHaveText(actor)
 }
@@ -17,7 +17,7 @@ test('桌面：宿主工单流转 → 自动预处理失败兜底 → 专员修�
   await expect(page.getByRole('heading', { level: 1 })).toContainText('DEMO-003')
   await expect(page.locator('.evidence-panel')).toContainText('¥ 20.00')
   const accepted = page.waitForResponse(response => response.request().method() === 'POST' && response.url().includes('/api/mock-host/tickets/'))
-  await page.getByRole('button', { name: '模拟流转至投诉队列' }).click()
+  await page.getByRole('button', { name: '流转至投诉队列' }).click()
   const payload = await (await accepted).json()
   expect(payload.transitioned).toBe(true); expect(payload.precheckAccepted).toBe(true)
   await expect(page.locator('.result-panel')).toContainText('AI 未完成')
@@ -41,7 +41,7 @@ test('桌面：宿主工单流转 → 自动预处理失败兜底 → 专员修�
   await expect(page.locator('.timeline')).toContainText('投诉专员确认核查材料')
   await expect(page.locator('.timeline')).toContainText('AI 原始材料')
   await expect(page.locator('.human-panel')).toContainText('reviewer')
-  await expect(page.getByRole('button', { name: '模拟流转至投诉队列' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '流转至投诉队列' })).toHaveCount(0)
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: info.outputPath('audit-complete.png'), fullPage: true })
   expect(errors).toEqual([])
