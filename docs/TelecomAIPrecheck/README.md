@@ -66,6 +66,9 @@ docker compose -f docs/TelecomAIPrecheck/docker-compose.yml down
 | MYSQL_ROOT_PASSWORD / MYSQL_PORT | Compose 管理密码／宿主端口，默认端口 3306 |
 | BACKEND_URL | Vite 开发代理目标，默认 http://127.0.0.1:8080 |
 | RUN_MYSQL_TESTS | true 时运行真实数据库测试 |
+| DEMO_HOST_PASSWORD | mysql 演示环境的宿主事件服务身份密码 |
+| HOST_EVENT_SOURCE | 事件幂等使用的稳定宿主标识，默认 mock-host |
+| PRECHECK_TASK_MAX_ATTEMPTS / PRECHECK_TASK_RETRY_DELAY_SECONDS | 自动任务最大执行次数／重试间隔 |
 
 `backend/.env.example` 为变量模板，Spring Boot 不自动读取 .env。使用 export 或 IDE 配置；前端 `.env.local` 可设置 BACKEND_URL。不要提交 .env，不要把密钥放入 VITE_ 开头的变量。
 
@@ -92,3 +95,7 @@ GitHub Actions 在 push、pull_request 或手动触发时构建，后端任务�
 ## 预审业务页面（Issue #4）
 
 启动上述 MySQL 后端后，在 frontend 下运行 `npm ci`、`npm run dev`，打开 http://127.0.0.1:5173 。使用本机 .env 中的演示密码登录。页面已实现预审、人工确认/驳回和审计。自定义 DB_URL 请使用 `connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`，避免旧 serverTimezone 设置造成时间线偏移。完整接入说明见 [Issue #4](../issue-4-integration.md)。
+
+## 事件驱动的自动预处理（Issue #6）
+
+宿主事件接口、服务身份、幂等键、任务状态、重试及恢复机制见 [Issue #6 契约](../issue-6-async-precheck.md)。原人工触发接口仍保留。

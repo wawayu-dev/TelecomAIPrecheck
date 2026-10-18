@@ -6,4 +6,8 @@ import java.time.Instant;
 public record PrecheckRun(String id, String ticketId, String status, String callStatus,
         String promptVersion, String requestedModel, String actualModel, String traceId,
         Instant createdAt, Instant completedAt, Long durationMs, String failureCode,
-        @com.fasterxml.jackson.annotation.JsonIgnore String resultJson, @com.fasterxml.jackson.annotation.JsonIgnore String findingsJson, int version) {}
+        @com.fasterxml.jackson.annotation.JsonIgnore String resultJson,
+        @com.fasterxml.jackson.annotation.JsonIgnore String findingsJson, int version,
+        String eventSource, String eventId, Long ticketVersion, String triggerType,
+        String taskStatus, int attemptCount, int maxAttempts, boolean currentResult,
+        Instant startedAt, Instant nextAttemptAt, Instant updatedAt) {}

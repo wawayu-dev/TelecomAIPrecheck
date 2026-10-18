@@ -8,7 +8,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
 import secrets,sys
 from pathlib import Path
 lines=['MYSQL_PORT=13307','DB_USERNAME=precheck','SERVER_PORT=8080','SPRING_PROFILES_ACTIVE=mysql']
-for name in ['DB_PASSWORD','MYSQL_ROOT_PASSWORD','DEMO_OPERATOR_PASSWORD','DEMO_REVIEWER_PASSWORD','DEMO_AUDITOR_PASSWORD']:
+for name in ['DB_PASSWORD','MYSQL_ROOT_PASSWORD','DEMO_OPERATOR_PASSWORD','DEMO_REVIEWER_PASSWORD','DEMO_AUDITOR_PASSWORD','DEMO_HOST_PASSWORD']:
     lines.append(name+'='+secrets.token_urlsafe(24))
 Path(sys.argv[1]).write_text('\n'.join(lines)+'\n')
 PY

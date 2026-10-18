@@ -5,16 +5,20 @@ import java.util.List;
 public interface AuditMapper {
     @Insert("""
         INSERT INTO ai_precheck_audit
-        (run_id,snapshot_run_id,actor_id,action,from_status,to_status,outcome,run_version,prompt_version,model,trace_id,occurred_at)
+        (run_id,snapshot_run_id,actor_id,action,from_status,to_status,outcome,run_version,prompt_version,model,
+         trace_id,occurred_at,event_id,ticket_id,ticket_version,duration_ms,error_type)
         SELECT id,id,#{actor},#{action},#{from},status,#{outcome},version,prompt_version,
-        COALESCE(actual_model,requested_model),#{trace},UTC_TIMESTAMP(6) FROM ai_precheck_run WHERE id=#{id}
+        COALESCE(actual_model,requested_model),#{trace},UTC_TIMESTAMP(6),event_id,ticket_id,ticket_version,
+        duration_ms,failure_code FROM ai_precheck_run WHERE id=#{id}
         """)
     int append(@Param("id") String id,@Param("actor") String actor,@Param("action") String action,
                @Param("from") String from,@Param("outcome") String outcome,@Param("trace") String trace);
     @Select("""
         SELECT id,run_id AS runId,snapshot_run_id AS snapshotRunId,actor_id AS actorId,action,
         from_status AS fromStatus,to_status AS toStatus,outcome,run_version AS runVersion,
-        prompt_version AS promptVersion,model,trace_id AS traceId,occurred_at AS occurredAt
+        prompt_version AS promptVersion,model,trace_id AS traceId,occurred_at AS occurredAt,
+        event_id AS eventId,ticket_id AS ticketId,ticket_version AS ticketVersion,
+        duration_ms AS durationMs,error_type AS errorType
         FROM ai_precheck_audit WHERE run_id=#{id} AND id>#{after} ORDER BY id LIMIT #{limit}
         """)
     List<AuditEvent> list(@Param("id") String id,@Param("after") long after,@Param("limit") int limit);

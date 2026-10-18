@@ -30,3 +30,12 @@ precheck:
     completions-path: ${XFYUN_COMPLETIONS_PATH:/v2/chat/completions}
     model: ${XFYUN_MODEL:}
     timeout-ms: ${XFYUN_TIMEOUT_MS:30000}
+  events:
+    source: ${HOST_EVENT_SOURCE:mock-host}
+  tasks:
+    core-pool-size: ${PRECHECK_TASK_CORE_POOL_SIZE:2}
+    max-pool-size: ${PRECHECK_TASK_MAX_POOL_SIZE:4}
+    queue-capacity: ${PRECHECK_TASK_QUEUE_CAPACITY:100}
+    max-attempts: ${PRECHECK_TASK_MAX_ATTEMPTS:3}
+    retry-delay-seconds: ${PRECHECK_TASK_RETRY_DELAY_SECONDS:30}
+    scan-delay-ms: ${PRECHECK_TASK_SCAN_DELAY_MS:5000}

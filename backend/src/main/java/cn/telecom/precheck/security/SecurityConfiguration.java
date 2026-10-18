@@ -23,7 +23,7 @@ public class SecurityConfiguration {
     UserDetailsService demoUsers(Environment env) {
         var users = new ArrayList<UserDetails>();
         var encoder = new BCryptPasswordEncoder();
-        for (String role : List.of("OPERATOR", "REVIEWER", "AUDITOR")) {
+        for (String role : List.of("OPERATOR", "REVIEWER", "AUDITOR", "HOST")) {
             String password = env.getProperty("DEMO_" + role + "_PASSWORD", "");
             if (!password.isBlank()) {
                 if (password.length() < 12) throw new IllegalArgumentException("Demo password must be at least 12 characters");
@@ -36,7 +36,9 @@ public class SecurityConfiguration {
     @ConditionalOnMissingBean(SecurityFilterChain.class)
     SecurityFilterChain secured(HttpSecurity http, ObjectMapper json) throws Exception {
         http.authorizeHttpRequests(a -> a.requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/api/internal/ticket-events/**").hasRole("HOST")
                 .anyRequest().hasAnyRole("OPERATOR","REVIEWER","AUDITOR"))
+            .csrf(c -> c.ignoringRequestMatchers("/api/internal/ticket-events/**"))
             .httpBasic(b -> b.authenticationEntryPoint((req,res,e) -> {
                 res.setStatus(401); res.setContentType("application/json;charset=UTF-8");
                 if (!"XMLHttpRequest".equals(req.getHeader("X-Requested-With")))
