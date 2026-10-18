@@ -96,7 +96,7 @@ describe('预审业务模块', () => {
     expect(host.api.timeline).not.toHaveBeenCalled()
     expect(wrapper.find('form').exists()).toBe(false)
   })
-  it('审计员只能查看，不能发起或审核', async () => {
+  it('质检审核人员只能查看审计信息，不能处理工单', async () => {
     const { wrapper, host } = setup('AUDITOR'); await flushPromises()
     expect(button(wrapper, '开始 AI 预审')).toBeUndefined()
     expect(wrapper.find('form').exists()).toBe(false)
