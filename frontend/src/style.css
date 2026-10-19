@@ -27,13 +27,18 @@ button { cursor:pointer; }
 .header-user button { padding:4px 0 4px 14px; border:0; border-left:1px solid #ffffff30; background:transparent; color:#d5e7f6; font-size:12px; }
 .business-nav { position:fixed; inset:56px 0 auto; z-index:18; height:36px; display:flex; align-items:stretch; padding-left:232px; background:#fff; border-bottom:1px solid #d9dfe5; }
 .business-nav.role-full { padding-left:0; }
-.business-nav a { min-width:88px; padding:9px 18px 7px; text-align:center; color:#566573; font-size:12px; }
-.business-nav a.active { color:#07529b; font-weight:600; background:#f2f7fb; border-bottom:3px solid #1673c9; }
+.business-nav button { min-width:88px; padding:9px 18px 7px; text-align:center; color:#566573; background:transparent; border:0; border-bottom:3px solid transparent; font-size:12px; }
+.business-nav button span { min-width:18px; margin-left:6px; padding:1px 5px; border-radius:9px; color:#647788; background:#edf1f4; font-size:9px; }
+.business-nav button.active { color:#07529b; font-weight:600; background:#f2f7fb; border-bottom-color:#1673c9; }
+.business-nav button.active span { color:#07529b; background:#dcecf8; }
 .host-sidebar { position:fixed; inset:92px auto 0 0; z-index:10; width:232px; display:flex; flex-direction:column; background:#fff; border-right:1px solid #d6dde3; }
 .sidebar-heading { height:46px; padding:0 15px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e1e6ea; }
 .sidebar-heading strong { font-size:15px; }
 .sidebar-heading span { padding:2px 7px; color:#9b3f36; background:#fff1ef; font-size:11px; }
 .ticket-list { overflow:auto; padding:4px 0 12px; }
+.ticket-list-state { margin:24px 16px; color:#84909a; text-align:center; font-size:11px; line-height:1.7; }
+.ticket-list-state.error { color:#983e35; }
+.ticket-list-state button { display:block; margin:8px auto 0; border:0; background:transparent; color:#075aa8; }
 .ticket-nav { display:block; margin:0; padding:10px 13px 9px 15px; color:#485765; text-decoration:none; border-bottom:1px solid #edf0f3; border-left:3px solid transparent; }
 .ticket-nav:hover { background:#f7f9fb; }
 .ticket-nav.router-link-active { background:#eaf3fb; border-left-color:#1673c9; }
@@ -57,6 +62,7 @@ button { cursor:pointer; }
 .host-breadcrumb em { margin-left:4px; padding:2px 7px; color:#617181; background:#f1f3f5; font:normal 10px Consolas,monospace; }
 .host-actions { display:flex; gap:8px; }
 .host-actions button { height:30px; padding:0 13px; border:1px solid #cbd3dc; background:#fff; color:#526272; font-size:12px; }
+.host-actions .new-ticket-action { color:#fff; background:#075aa8; border-color:#064d90; }
 .host-actions button:disabled { opacity:.55; cursor:wait; }
 .host-footer { margin-top:auto; padding:13px 24px; display:flex; justify-content:space-between; gap:10px; color:#919aa4; background:#fff; border-top:1px solid #dce1e6; font-size:10px; }
 .host-login { min-height:calc(100vh - 106px); display:grid; grid-template-columns:minmax(380px,560px) 420px; justify-content:center; align-items:center; gap:90px; padding:65px 48px 90px; background:linear-gradient(100deg,#edf4fa 0,#f5f7f9 55%,#eef1f4 100%); }
@@ -94,6 +100,10 @@ button { cursor:pointer; }
 .login-security { margin:13px 0 0; text-align:center; color:#8a959f; font-size:10px; }
 .public-footer { position:fixed; inset:auto 0 0; height:42px; padding:0 30px; display:flex; align-items:center; justify-content:space-between; color:#77838d; background:#fff; border-top:1px solid #d6dce1; font-size:10px; }
 .host-not-found { margin:20px; padding:35px; background:#fff; border:1px solid #d8dde3; }
+.host-empty-state { margin:22px; padding:42px; color:#75838e; background:#fff; border:1px solid #d8dde3; text-align:center; }
+.host-empty-state h1 { margin:0 0 8px; color:#354655; font-size:20px; }
+.host-empty-state p { margin:0; }
+.host-empty-state>button { margin-top:20px; padding:9px 20px; color:#fff; background:#075aa8; border:1px solid #064d90; }
 @media(max-width:1050px) {
   .system-header-right>span:not(.system-status) { display:none; }
   .business-nav { padding-left:220px; }
@@ -108,7 +118,7 @@ button { cursor:pointer; }
   .system-header { height:58px; padding:0 14px; }
   .system-brand strong { font-size:15px; } .system-brand small,.system-status { display:none; }
   .system-header-right { gap:8px; } .header-user { padding-left:0; border:0; } .header-user>span:nth-child(2) { display:none; }
-  .business-nav { position:static; height:39px; padding:0; overflow:auto; } .business-nav a { min-width:78px; padding:10px 13px; font-size:11px; }
+  .business-nav { position:static; height:39px; padding:0; overflow:auto; } .business-nav button { min-width:78px; padding:10px 13px 7px; font-size:11px; }
   .host-sidebar { position:static; width:100%; height:auto; border-right:0; border-bottom:1px solid #cfd6df; }
   .sidebar-heading,.sidebar-notice { display:none; }
   .ticket-list { display:flex; padding:0; overflow:auto; }

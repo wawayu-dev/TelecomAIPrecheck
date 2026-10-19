@@ -29,6 +29,7 @@
 | GET | `/api/session` | O/R/A | 当前身份和 CSRF 信息 |
 | POST | `/api/session/logout` | O/R/A | 注销 Session |
 | GET | `/api/tickets/{ticketId}/context` | O/R/A | 读取宿主工单及证据 |
+| GET | `/api/mock-host/tickets` | O/R/A | 查询演示宿主工单及统一工作流状态 |
 | POST | `/api/mock-host/tickets/{ticketId}/complaint-queue` | O | 模拟宿主流转并投递事件 |
 | POST | `/api/internal/ticket-events/complaint-queue` | H | 正式宿主事件入口 |
 | POST | `/api/ai-prechecks/tickets/{ticketId}` | O | 手工同步预审，仅用于调试 |
@@ -131,6 +132,14 @@
 
 `transitioned=true` 表示宿主流转已经完成；AI 任务投递失败时只把 `precheckAccepted` 设为 `false`，不会回滚宿主流转。
 
+### 5.4 演示宿主工单列表
+
+`GET /api/mock-host/tickets`
+
+客服和投诉专员工作台共同使用该接口。`workflowStatus` 表示宿主状态，`reviewerBucket` 为
+`PENDING`、`PROCESSING`、`COMPLETED` 之一；未提交工单为 `null`。列表状态只依据最新核查轮次，
+不会被较早的历史轮次覆盖。
+
 ## 6. 核查结果
 
 ### 6.1 当前有效结果
@@ -149,7 +158,7 @@
     "taskStatus":"COMPLETED",
     "version":1,
     "currentResult":true,
-    "promptVersion":"charge-dispute-v1",
+    "promptVersion":"charge-dispute-v2",
     "requestedModel":"spark-x2.5",
     "actualModel":"spark-x2.5",
     "traceId":"uuid"
@@ -158,7 +167,9 @@
     "complaintType":"VALUE_ADDED_CHARGE_DISPUTE",
     "disputedAmount":30.00,
     "currency":"CNY",
-    "summary":"...",
+    "summary":"账单金额与订购价格一致，未发现价格异常。",
+    "evidenceGap":"存在授权记录，但尚未确认授权过程能否证明客户主动订购。",
+    "suggestedAction":"核实授权时间、验证方式和操作主体，并关联订购流水。",
     "evidenceIds":["BILL-001","ORDER-001","AUTH-001"],
     "recommendation":"VERIFY_AUTHORIZATION"
   },
@@ -170,6 +181,7 @@
 `callStatus`：`PENDING`、`RUNNING`、`SUCCESS`、`FAILED`。
 `taskStatus`：`QUEUED`、`RUNNING`、`RETRY_WAIT`、`COMPLETED`、`FAILED`。
 `recommendation`：`VERIFY_AUTHORIZATION`、`VERIFY_BILLING`、`MANUAL_REVIEW`。
+`summary`、`evidenceGap`、`suggestedAction` 分别表示“核查发现”、“关键疑点”和“建议操作”；`recommendation` 仅用于工作流分类。
 
 ### 6.2 历史列表
 

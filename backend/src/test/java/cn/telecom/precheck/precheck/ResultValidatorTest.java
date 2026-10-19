@@ -19,6 +19,16 @@ class ResultValidatorTest {
         assertThat(result.disputedAmount()).isNull();
         assertThat(result.evidenceIds()).hasSize(3);
     }
+    @Test void jsonCodeFenceFromCompatibleProviderIsAccepted() {
+        var result=validator.parse("```json\n"+Samples.VALID+"\n```",verifier.verify(provider.getContext("DEMO-001")));
+        assertThat(result.evidenceIds()).hasSize(3);
+    }
+    @Test void nonJsonOrNestedCodeFenceIsRejected() {
+        assertThatThrownBy(() -> validator.parse("```text\n"+Samples.VALID+"\n```",verifier.verify(provider.getContext("DEMO-001"))))
+                .hasMessage("INVALID_OUTPUT");
+        assertThatThrownBy(() -> validator.parse("```json\n"+Samples.VALID+"\n```\nextra",verifier.verify(provider.getContext("DEMO-001"))))
+                .hasMessage("INVALID_OUTPUT");
+    }
     @Test void fabricatedEvidenceIsRejected() {
         assertThatThrownBy(() -> validator.parse(Samples.VALID.replace("BILL-001","FAKE"),verifier.verify(provider.getContext("DEMO-001"))))
                 .hasMessage("INVALID_EVIDENCE_REFERENCE");
@@ -41,7 +51,7 @@ class ResultValidatorTest {
             case "invalidEnum" -> Samples.VALID.replace("VALUE_ADDED_CHARGE_DISPUTE","VIOLATION_CONFIRMED");
             case "negativeAmount" -> Samples.VALID.replace("30.00","-1");
             case "missingField" -> Samples.VALID.replace("\"currency\":\"CNY\",","");
-            case "blankSummary" -> Samples.VALID.replace("客户对30元视频会员费提出异议，希望核实订购情况。","");
+            case "blankSummary" -> Samples.VALID.replace("账单金额与订购价格一致，未发现价格异常。","");
             case "malformed" -> "not json";
             case "trailing" -> Samples.VALID+" {}";
             default -> Samples.VALID.replace("{","{\"currency\":\"CNY\",");
@@ -51,9 +61,10 @@ class ResultValidatorTest {
     }
     @Test void missingAuthorizationCannotAdoptModelsViolationConclusion() {
         String output=Samples.forTicket("002").replace(",\"AUTH-002\"", "")
-                .replace("客户对30元视频会员费提出异议，希望核实订购情况。","已确认违规扣费，应当退费");
+                .replace("账单金额与订购价格一致，未发现价格异常。","账单与订购价格一致");
         var result=validator.parse(output,verifier.verify(provider.getContext("DEMO-002")));
-        assertThat(result.summary()).contains("不能据此认定违规扣费").doesNotContain("应当退费");
+        assertThat(result.evidenceGap()).contains("不能据此认定违规扣费");
+        assertThat(result.suggestedAction()).contains("授权时间","验证方式","订购流水");
         assertThat(result.recommendation()).isEqualTo(PrecheckResult.Recommendation.VERIFY_AUTHORIZATION);
     }
 }

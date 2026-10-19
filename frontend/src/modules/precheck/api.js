@@ -3,6 +3,9 @@ export function createPrecheckApi(request) {
   const id = encodeURIComponent
   const base = '/api/ai-prechecks'
   return {
+    tickets: signal => request('/api/mock-host/tickets', { signal }),
+    createTicket: body => request('/api/mock-host/tickets', { method: 'POST', body }),
+    updateTicket: (ticket, body) => request(`/api/mock-host/tickets/${id(ticket)}`, { method: 'PUT', body }),
     context: (ticket, signal) => request(`/api/tickets/${id(ticket)}/context`, { signal }),
     history: (ticket, offset = 0, signal) => request(`${base}/tickets/${id(ticket)}?limit=20&offset=${offset}`, { signal }),
     current: (ticket, signal) => request(`${base}/tickets/${id(ticket)}/current`, { signal }),
@@ -26,6 +29,7 @@ export const messages = {
   INVALID_REQUEST: '请求内容不符合要求，请检查填写内容。',
   REVIEW_CONFLICT: '这条记录的状态或版本已变化，已尝试刷新最新结果。',
   PRECHECK_RETRY_CONFLICT: '该任务已经恢复、被确认或不再是当前工单版本，请刷新查看。',
+  HOST_TICKET_CONFLICT: '工单状态已经变化，请刷新后重试。',
 }
 export function errorText(error) {
   return (messages[error?.code] || '请求未完成，请检查服务连接后重试。') + (error?.traceId ? ` 追踪编号：${error.traceId}` : '')

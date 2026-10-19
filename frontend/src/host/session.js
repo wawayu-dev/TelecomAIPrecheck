@@ -10,7 +10,7 @@ export function createDemoHost(fetcher = (...args) => fetch(...args)) {
   let csrf = null, revision = 0
   async function request(path, options = {}) {
     const headers = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-    if (options.method === 'POST') {
+    if (options.method && !['GET', 'HEAD'].includes(options.method)) {
       headers['Content-Type'] = 'application/json'
       if (csrf) headers[csrf.csrfHeader] = csrf.csrfToken
     }

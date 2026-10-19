@@ -23,6 +23,10 @@ PY
 chmod 600 "$ENV_FILE"
 set -a
 source "$ENV_FILE"
+MODEL_ENV_FILE="$ROOT/docs/TelecomAIPrecheck/.env.model"
+if [[ -f "$MODEL_ENV_FILE" ]]; then
+  source "$MODEL_ENV_FILE"
+fi
 set +a
 export DEMO_ONE_CLICK_LOGIN="${DEMO_ONE_CLICK_LOGIN:-true}"
 compose=(docker compose --env-file "$ENV_FILE" -p telecom-ai-precheck-demo -f "$ROOT/docs/TelecomAIPrecheck/docker-compose.yml")

@@ -1,21 +1,73 @@
 <script setup>
-import { computed, inject, ref } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { computed, inject, ref, watch } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { precheckHostKey } from './modules/precheck'
 import { errorText } from './modules/precheck/api'
 const host = inject(precheckHostKey)
 const route = useRoute()
+const router = useRouter()
 const identity = host.identity
 const account = ref('operator'), signing = ref(false), loginError = ref('')
+const tickets = ref([]), ticketLoading = ref(false), ticketError = ref(''), activeNav = ref(0)
 const roles = { ROLE_OPERATOR: '客服受理人员', ROLE_REVIEWER: '投诉处理专员', ROLE_AUDITOR: '质检审核人员（只读）' }
 const currentTicket = computed(() => typeof route.params.ticketId === 'string' ? route.params.ticketId : '')
 const currentRole = computed(() => identity.value?.roles[0] || '')
 const roleUi = computed(() => ({
-  ROLE_OPERATOR: { nav: ['投诉登记', '我的工单'], heading: '我的投诉工单', count: '3', filter: ['全部', '处理中'], crumb: '投诉登记' },
-  ROLE_REVIEWER: { nav: ['核查待办', '处理中', '已完成'], heading: '核查待办', count: '3', filter: ['待处理', '全部'], crumb: '投诉核查' },
-  ROLE_AUDITOR: { nav: ['审计工作台', '抽检记录'], heading: '审计工单', count: '3', filter: ['近期处理', '全部'], crumb: '质量审计' },
-}[currentRole.value] || { nav: [], heading: '', count: '0', filter: [], crumb: '' }))
-const tickets = [{ id: 'DEMO-001', label: '视频会员扣费争议', note: '账单与授权材料齐全', level: '普通', operatorStatus: '登记中', reviewerStatus: '待核查' }, { id: 'DEMO-002', label: '未确认的业务订购', note: '缺少授权凭据', level: '关注', operatorStatus: '处理中', reviewerStatus: '待补充' }, { id: 'DEMO-003', label: '月费金额不一致', note: '账单与订购价格存在差异', level: '普通', operatorStatus: '已完成', reviewerStatus: '已完成' }]
+  ROLE_OPERATOR: { nav: ['投诉登记', '我的工单'], headings: ['待登记投诉', '我的投诉工单'], crumb: '投诉登记' },
+  ROLE_REVIEWER: { nav: ['核查待办', '处理中', '已完成'], headings: ['核查待办', '处理中', '已完成'], crumb: '投诉核查' },
+  ROLE_AUDITOR: { nav: ['审计工作台'], headings: ['审计工单'], crumb: '质量审计' },
+}[currentRole.value] || { nav: [], headings: [], crumb: '' }))
+const visibleTickets = computed(() => {
+  if (currentRole.value === 'ROLE_OPERATOR') return tickets.value.filter(ticket => activeNav.value === 0 ? !ticket.submitted : ticket.submitted)
+  if (currentRole.value === 'ROLE_REVIEWER') {
+    const bucket = ['PENDING', 'PROCESSING', 'COMPLETED'][activeNav.value]
+    return tickets.value.filter(ticket => ticket.reviewerBucket === bucket)
+  }
+  return tickets.value
+})
+const sidebarHeading = computed(() => roleUi.value.headings[activeNav.value] || roleUi.value.headings[0] || '')
+const hasVisibleCurrent = computed(() => currentRole.value === 'ROLE_AUDITOR'
+  || (currentRole.value === 'ROLE_OPERATOR' && currentTicket.value === 'new')
+  || visibleTickets.value.some(ticket => ticket.id === currentTicket.value))
+async function startNewTicket() {
+  activeNav.value = 0
+  await router.push('/host/tickets/new/precheck')
+}
+async function loadTickets(nextNav = null, focusTicketId = null) {
+  if (!identity.value || !host.api?.tickets) { tickets.value = []; return }
+  ticketLoading.value = true; ticketError.value = ''
+  try {
+    const rows = await host.api.tickets()
+    let resolvedNav = nextNav
+    if (resolvedNav === null && focusTicketId && currentRole.value === 'ROLE_REVIEWER') {
+      const bucket = rows.find(ticket => ticket.id === focusTicketId)?.reviewerBucket
+      const bucketIndex = ['PENDING', 'PROCESSING', 'COMPLETED'].indexOf(bucket)
+      if (bucketIndex >= 0) resolvedNav = bucketIndex
+    }
+    if (resolvedNav !== null) activeNav.value = resolvedNav
+    tickets.value = rows
+  }
+  catch (error) { tickets.value = []; ticketError.value = errorText(error) }
+  finally { ticketLoading.value = false }
+}
+async function chooseNav(index) {
+  activeNav.value = index
+  const first = visibleTickets.value[0]
+  if (first && !visibleTickets.value.some(ticket => ticket.id === currentTicket.value))
+    await router.push(`/host/tickets/${first.id}/precheck`)
+}
+async function workflowChanged(change) {
+  const nextNav = currentRole.value === 'ROLE_OPERATOR' ? 1
+    : currentRole.value === 'ROLE_REVIEWER' && change?.decision === 'CONFIRMED' ? 2
+      : currentRole.value === 'ROLE_REVIEWER' && change?.decision === 'REJECTED' ? 1 : null
+  await loadTickets(nextNav, change?.ticketId)
+  if (change?.ticketId && change.ticketId !== currentTicket.value)
+    await router.replace(`/host/tickets/${change.ticketId}/precheck`)
+}
+watch(() => [identity.value?.actorId, currentRole.value], () => {
+  activeNav.value = 0
+  if (identity.value) loadTickets(); else tickets.value = []
+}, { immediate: true })
 async function login() {
   if (signing.value) return
   signing.value = true; loginError.value = ''
@@ -47,24 +99,28 @@ async function logout() {
     </header>
 
     <template v-if="identity">
-      <nav class="business-nav role-business-nav" :class="{ 'role-full': currentRole === 'ROLE_AUDITOR' }" aria-label="岗位业务导航"><a v-for="(item, index) in roleUi.nav" :key="item" :class="{ active: index === 0 }">{{ item }}</a></nav>
+      <nav class="business-nav role-business-nav" :class="{ 'role-full': currentRole === 'ROLE_AUDITOR' }" aria-label="岗位业务导航"><button v-for="(item, index) in roleUi.nav" :key="item" :class="{ active: index === activeNav }" :aria-current="index === activeNav ? 'page' : undefined" @click="chooseNav(index)">{{ item }}<span v-if="currentRole === 'ROLE_REVIEWER'">{{ tickets.filter(ticket => ticket.reviewerBucket === ['PENDING', 'PROCESSING', 'COMPLETED'][index]).length }}</span></button></nav>
       <aside v-if="currentRole !== 'ROLE_AUDITOR'" class="host-sidebar">
-        <div class="sidebar-heading"><strong>{{ roleUi.heading }}</strong><span>{{ roleUi.count }}</span></div>
+        <div class="sidebar-heading"><strong>{{ sidebarHeading }}</strong><span>{{ visibleTickets.length }}</span></div>
         <nav class="ticket-list" aria-label="宿主工单列表">
-          <RouterLink v-for="ticket in tickets" :key="ticket.id" :to="`/host/tickets/${ticket.id}/precheck`" class="ticket-nav">
-            <div class="ticket-nav-top"><span class="ticket-type">{{ currentRole === 'ROLE_OPERATOR' ? ticket.operatorStatus : currentRole === 'ROLE_AUDITOR' ? '待审计' : ticket.reviewerStatus }}</span><time>今日</time></div>
-            <strong>{{ ticket.label }}</strong><p>{{ ticket.note }}</p>
-            <div class="ticket-nav-bottom"><code>{{ ticket.id }}</code><span :class="{ attention: ticket.level === '关注' }">{{ ticket.level }}</span></div>
+          <RouterLink v-for="ticket in visibleTickets" :key="ticket.id" :to="`/host/tickets/${ticket.id}/precheck`" class="ticket-nav">
+            <div class="ticket-nav-top"><span class="ticket-type">{{ ticket.statusLabel }}</span><time>今日</time></div>
+            <strong>{{ ticket.title }}</strong><p>{{ ticket.note }}</p>
+            <div class="ticket-nav-bottom"><code>{{ ticket.id }}</code><span :class="{ attention: ticket.priority === '关注' }">{{ ticket.priority }}</span></div>
           </RouterLink>
+          <p v-if="ticketLoading" class="ticket-list-state">正在加载工单…</p>
+          <p v-else-if="ticketError" class="ticket-list-state error">{{ ticketError }} <button @click="loadTickets">重试</button></p>
+          <p v-else-if="!visibleTickets.length" class="ticket-list-state">当前分类暂无工单</p>
         </nav>
       </aside>
 
       <div class="host-main" :class="{ 'full-width': currentRole === 'ROLE_AUDITOR' }">
         <header class="host-topbar">
           <div class="host-breadcrumb"><strong>{{ roleUi.crumb }}</strong><em>{{ currentTicket }}</em></div>
-          <div class="host-actions"><button class="plain-action" @click="$router.back()">返回</button></div>
+          <div class="host-actions"><button v-if="currentRole === 'ROLE_OPERATOR'" class="new-ticket-action" @click="startNewTicket">新建投诉</button><button class="plain-action" @click="$router.back()">返回</button></div>
         </header>
-        <RouterView :key="route.fullPath" />
+        <RouterView v-if="hasVisibleCurrent" v-slot="{ Component }"><component :is="Component" :key="route.fullPath" @workflow-change="workflowChanged" /></RouterView>
+        <main v-else-if="!ticketLoading" class="host-empty-state"><h1>{{ sidebarHeading }}</h1><p>当前分类暂无可处理工单。</p><button v-if="currentRole === 'ROLE_OPERATOR'" @click="startNewTicket">新建投诉登记</button></main>
       </div>
     </template>
 

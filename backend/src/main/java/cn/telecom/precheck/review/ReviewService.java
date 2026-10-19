@@ -1,6 +1,7 @@
 package cn.telecom.precheck.review;
 import cn.telecom.precheck.precheck.*;
 import cn.telecom.precheck.security.CurrentActor;
+import cn.telecom.precheck.adapter.HostTicketMapper;
 import jakarta.validation.Valid;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,11 @@ public class ReviewService {
     private final PrecheckMapper runs;
     private final ReviewMapper reviews;
     private final AuditMapper audits;
+    private final HostTicketMapper tickets;
     private final ObjectMapper json;
-    public ReviewService(PrecheckMapper runs, ReviewMapper reviews, AuditMapper audits, ObjectMapper json) {
-        this.runs=runs; this.reviews=reviews; this.audits=audits; this.json=json;
+    public ReviewService(PrecheckMapper runs, ReviewMapper reviews, AuditMapper audits,
+            HostTicketMapper tickets, ObjectMapper json) {
+        this.runs=runs; this.reviews=reviews; this.audits=audits; this.tickets=tickets; this.json=json;
     }
     public record ReviewChange(JsonNode aiResult, Review humanResult) {}
     public record TimelineItem(AuditEvent event, ReviewChange reviewChange) {}
@@ -32,6 +35,10 @@ public class ReviewService {
         reviews.insert(id,safe,actor,trace,request.expectedVersion()+1);
         if (audits.append(id,actor,"REVIEW_"+request.decision(),"PENDING_REVIEW","COMMITTED",trace)!=1)
             throw new IllegalStateException("Audit write failed");
+        var run = runs.find(id);
+        // 仅同步本地演示宿主；真实宿主工单不在该表中，由其正式事件集成负责状态回写。
+        tickets.updateStatus(run.ticketId(), request.decision().name().equals("CONFIRMED")
+                ? "COMPLETED" : "NEEDS_SUPPLEMENT", actor);
         return reviews.find(id);
     }
     @PreAuthorize("hasAnyRole('REVIEWER','AUDITOR')")

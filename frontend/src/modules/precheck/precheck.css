@@ -304,6 +304,7 @@
 .ai-assistance { padding:15px 17px; background:#fff; border:1px solid #d5dce1; }
 .ai-assistance-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
 .ai-assistance-title h2 { font-size:14px; }
+.ai-assistance-title>div>p { margin-top:1px; color:#7b8993; font-size:10px; }
 .ai-assistance-title span { color:#74838e; font-size:10px; }
 .ai-quiet-state,.ai-fallback { color:#697985; font-size:11px; }
 .ai-fallback { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; background:#f8f6ef; border-left:2px solid #c7aa70; }
@@ -311,6 +312,18 @@
 .compact-ai-output { display:grid; gap:10px; }
 .compact-ai-output .recommendation { padding:7px 9px; }
 .ai-assistance .key-findings { margin-top:11px; padding-top:10px; }
+.action-guidance { display:grid; gap:0; border:1px solid #dce3e8; }
+.guidance-item { display:grid; grid-template-columns:76px minmax(0,1fr); gap:12px; padding:12px 13px; background:#fff; }
+.guidance-item+.guidance-item { border-top:1px solid #e2e7eb; }
+.guidance-item>span { padding-top:1px; color:#5e7180; font-size:11px; font-weight:600; }
+.guidance-item>p { color:#344957; }
+.guidance-item.verified { border-left:3px solid #4a9475; }
+.guidance-item.gap { border-left:3px solid #c08a35; background:#fffdfa; }
+.guidance-item.action { grid-template-columns:76px minmax(0,1fr) auto; border-left:3px solid #397fb7; background:#f8fbfe; }
+.guidance-item.action small { align-self:start; padding:2px 6px; color:#376b94; background:#eaf3fa; font-size:9px; white-space:nowrap; }
+.guidance-evidence { display:flex; align-items:center; gap:12px; padding:8px 13px; color:#82909a; background:#f7f9fa; border-top:1px solid #dce3e8; font-size:9px; }
+.guidance-evidence>span { width:64px; flex:none; }
+.guidance-evidence .evidence-links { margin-top:0; }
 .reviewer-history { margin-top:16px; border:0; border-top:1px solid #d5dce1; background:transparent; }
 .reviewer-history>summary { color:#667987; font-weight:500; }
 
@@ -386,6 +399,8 @@
   .amount-comparison { grid-template-columns:1fr; }
   .amount-comparison>div { padding:8px 0; }
   .amount-comparison>div+div { padding-left:0; border-top:1px solid #e0e5e9; border-left:0; }
+  .guidance-item,.guidance-item.action { grid-template-columns:1fr; gap:5px; }
+  .guidance-item.action small { justify-self:start; }
   .evidence-disclosure>summary { grid-template-columns:minmax(0,1fr) auto; }
   .evidence-disclosure>summary em { display:none; }
   .audit-result-body>dl { grid-template-columns:1fr; gap:3px; }

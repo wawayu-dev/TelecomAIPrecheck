@@ -10,6 +10,8 @@ function setup(role) {
   const data = view()
   const host = { identity: shallowRef({ actorId: role.toLowerCase(), roles: [`ROLE_${role}`] }), api: {
     context: vi.fn(async id => context(id)),
+    tickets: vi.fn(async () => [{ id: 'DEMO-001', title: '视频会员扣费争议', note: '账单与授权材料齐全', priority: '普通', workflowStatus: 'DRAFT', statusLabel: '登记中', reviewerBucket: null, submitted: false }]),
+    updateTicket: vi.fn(async (id, body) => ({ id, ...body })),
     transition: vi.fn(async () => ({ precheckAccepted: true })),
     history: vi.fn(async () => [data]), current: vi.fn(async () => data), run: vi.fn(async () => data),
     review: vi.fn(async () => role === 'AUDITOR' ? ({ decision: 'CONFIRMED', summary: '专员确认摘要', reason: '证据一致', recommendation: 'VERIFY_AUTHORIZATION', actorId: 'reviewer', reviewedAt: '2026-10-17T12:00:00Z' }) : null),
@@ -37,7 +39,7 @@ describe('按岗位隔离的工作台', () => {
 
   it('投诉专员直接查看自动核查结果并处理，不读取审计日志', async () => {
     const { wrapper, host } = setup('REVIEWER'); await flushPromises()
-    expect(wrapper.text()).toContain('AI 辅助意见')
+    expect(wrapper.text()).toContain('AI 核查导航')
     expect(wrapper.text()).toContain('核查材料')
     expect(wrapper.find('.review-form').exists()).toBe(true)
     expect(host.api.current).toHaveBeenCalledTimes(1)

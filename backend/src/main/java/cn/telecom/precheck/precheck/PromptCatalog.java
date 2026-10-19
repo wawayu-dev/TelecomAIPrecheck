@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PromptCatalog {
-    public static final String VERSION = "charge-dispute-v1";
+    public static final String VERSION = "charge-dispute-v2";
     private final String prompt;
     public PromptCatalog() throws IOException {
         try (var stream = new ClassPathResource("prompts/" + VERSION + ".txt").getInputStream()) {

@@ -20,7 +20,9 @@ export function usePrecheck(ticketId, host) {
   function populateDraft() {
     draft.summary = review.value?.summary || selected.value?.result?.summary || ''
     draft.recommendation = review.value?.recommendation || selected.value?.result?.recommendation || 'MANUAL_REVIEW'
-    draft.reason = ''
+    const gap = selected.value?.result?.evidenceGap
+    const action = selected.value?.result?.suggestedAction
+    draft.reason = review.value?.reason || [gap && `关键疑点：${gap}`, action && `建议操作：${action}`].filter(Boolean).join('\n')
   }
   async function detail(id, token, signal) {
     const [run, saved] = await Promise.all([host.api.run(id, signal), host.api.review(id, signal)])
@@ -100,9 +102,9 @@ export function usePrecheck(ticketId, host) {
     } finally { if (currentScope === scope) writing.value = false }
   }
   async function submit(decision) {
-    if (busy.value || !canReview.value) return
+    if (busy.value || !canReview.value) return false
     if (!draft.summary.trim() || !draft.reason.trim() || draft.summary.length > 1000 || draft.reason.length > 1000) {
-      error.value = '请填写核查摘要和核查意见，每项不超过 1000 字。'; return
+      error.value = '请填写核查摘要和核查意见，每项不超过 1000 字。'; return false
     }
     const currentScope = scope, id = selected.value.run.id
     const body = { expectedVersion: selected.value.run.version, decision, ...draft }
@@ -112,6 +114,7 @@ export function usePrecheck(ticketId, host) {
       if (currentScope !== scope) return
       await refresh(id)
       if (currentScope === scope) notice.value = decision === 'CONFIRMED' ? '人工建议已确认，审核及审计已保存。' : '本轮预审已驳回，审核及审计已保存。'
+      return currentScope === scope
     } catch (cause) {
       if (currentScope !== scope) return
       await refresh(id)
@@ -119,6 +122,7 @@ export function usePrecheck(ticketId, host) {
         preservedDraft.value = body
         error.value = `${errorText(cause)} 未提交的编辑内容保留在下方，请核对最新状态，不会自动重提。`
       }
+      return false
     } finally { if (currentScope === scope) writing.value = false }
   }
   async function retry() {

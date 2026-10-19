@@ -50,6 +50,10 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiError> eventConflict(HttpServletRequest request) {
         return error(409, "EVENT_CONFLICT", "事件标识已用于其他工单版本", request);
     }
+    @ExceptionHandler(cn.telecom.precheck.adapter.HostTicketConflictException.class)
+    ResponseEntity<ApiError> hostTicketConflict(HttpServletRequest request) {
+        return error(409, "HOST_TICKET_CONFLICT", "工单状态已变化，请刷新后重试", request);
+    }
     @ExceptionHandler(cn.telecom.precheck.precheck.PrecheckRetryConflictException.class)
     ResponseEntity<ApiError> retryConflict(HttpServletRequest request) {
         return error(409, "PRECHECK_RETRY_CONFLICT", "任务状态或版本已变化，请刷新后重试", request);

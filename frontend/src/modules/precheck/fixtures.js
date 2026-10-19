@@ -9,7 +9,7 @@ export function context(ticketId = 'DEMO-001') {
 }
 export function view(ticketId = 'DEMO-001', status = 'PENDING_REVIEW', id = 'run-1') {
   return { run: { id, ticketId, status, callStatus: 'SUCCESS', taskStatus: 'COMPLETED', attemptCount: 1, maxAttempts: 3, currentResult: true, eventId: 'EV-test', ticketVersion: 1, version: 1, promptVersion: 'charge-dispute-v1', requestedModel: 'test-model', actualModel: 'test-model', createdAt: '2026-10-17T10:00:00Z', durationMs: 100, traceId: 'trace-test' },
-    result: { complaintType: 'VALUE_ADDED_CHARGE_DISPUTE', disputedAmount: 30, summary: '合成 AI 摘要', recommendation: 'VERIFY_AUTHORIZATION', evidenceIds: ['BILL-' + ticketId.slice(-3)] },
+    result: { complaintType: 'VALUE_ADDED_CHARGE_DISPUTE', disputedAmount: 30, summary: '账单金额与订购价格相差10元，差异原因尚未查明。', evidenceGap: '未检索到关联授权凭证，无法证明客户主动订购。', suggestedAction: '补充授权凭证，核实授权时间、验证方式和操作主体，并关联订购流水。', recommendation: 'VERIFY_AUTHORIZATION', evidenceIds: ['BILL-' + ticketId.slice(-3)] },
     findings: [{ code: 'AMOUNT_MISMATCH', evidenceIds: ['BILL-' + ticketId.slice(-3), 'ORDER-' + ticketId.slice(-3)] }], evidenceSnapshot: context(ticketId),
   }
 }

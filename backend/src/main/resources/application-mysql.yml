@@ -8,5 +8,6 @@ spring:
     hikari:
       connection-timeout: 5000
 precheck:
+  context-provider: mysql
   demo-login:
     enabled: ${DEMO_ONE_CLICK_LOGIN:false}
