@@ -14,8 +14,9 @@ class EvidenceVerifierTest {
     @Test void completeEvidenceHasNoMissingFindings() {
         var report = verifier.verify(provider.getContext("DEMO-001"));
         assertThat(report.findings()).isEmpty();
-        assertThat(report.authorizationIncomplete()).isFalse();
+        assertThat(report.authorizationIncomplete()).isTrue();
         assertThat(report.evidenceIds()).containsExactlyInAnyOrder("BILL-001","ORDER-001","AUTH-001");
+        assertThat(report.verifiedFact()).contains("30.00 元", "未发现计价差异");
     }
     @Test void missingAuthorizationIsExplicit() {
         var report = verifier.verify(provider.getContext("DEMO-002"));

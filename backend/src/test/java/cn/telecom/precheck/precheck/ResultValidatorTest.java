@@ -67,4 +67,9 @@ class ResultValidatorTest {
         assertThat(result.suggestedAction()).contains("授权时间","验证方式","订购流水");
         assertThat(result.recommendation()).isEqualTo(PrecheckResult.Recommendation.VERIFY_AUTHORIZATION);
     }
+    @Test void deterministicRuleFactReplacesModelSummary() {
+        String output=Samples.VALID.replace("账单金额与订购价格一致，未发现价格异常。","模型自行生成的金额判断");
+        var result=validator.parse(output,verifier.verify(provider.getContext("DEMO-001")));
+        assertThat(result.summary()).contains("30.00 元","未发现计价差异").doesNotContain("模型自行生成");
+    }
 }

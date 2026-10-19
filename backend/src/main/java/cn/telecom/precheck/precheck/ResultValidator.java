@@ -32,12 +32,14 @@ public class ResultValidator {
         // 授权不完整时使用代码生成的中性证据缺口和动作，避免模型输出直接认定违规。
         if (report.authorizationIncomplete()) {
             return new PrecheckResult(result.complaintType(), result.disputedAmount(), result.currency(),
-                    result.summary(),
+                    report.verifiedFact(),
                     "本次关联授权证据不完整，现有材料无法证明客户主动订购，不能据此认定违规扣费。",
                     "补充授权凭证，并核实授权时间、验证方式、操作主体及其与订购流水的关联关系。",
                     result.evidenceIds(), PrecheckResult.Recommendation.VERIFY_AUTHORIZATION);
         }
-        return result;
+        return new PrecheckResult(result.complaintType(), result.disputedAmount(), result.currency(),
+                report.verifiedFact(), result.evidenceGap(), result.suggestedAction(), result.evidenceIds(),
+                result.recommendation());
     }
 
     private String unwrapJsonFence(String value) {

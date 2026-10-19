@@ -5,7 +5,10 @@ export function usePrecheck(ticketId, host) {
   const context = ref(null), history = ref([]), selected = ref(null), review = ref(null), audit = ref([])
   const loading = ref(false), writing = ref(false), paging = ref(false), moreHistory = ref(false), moreAudit = ref(false)
   const error = ref(''), auditError = ref(''), notice = ref(''), preservedDraft = ref(null)
-  const draft = reactive({ summary: '', recommendation: 'MANUAL_REVIEW', reason: '' })
+  const draft = reactive({
+    evidenceConclusion: 'INSUFFICIENT', nextAction: 'REQUEST_EVIDENCE',
+    summary: '', recommendation: 'VERIFY_AUTHORIZATION', reason: '',
+  })
   const roles = computed(() => host.identity.value?.roles || [])
   const canAudit = computed(() => roles.value.includes('ROLE_AUDITOR'))
   const canReview = computed(() => roles.value.includes('ROLE_REVIEWER') && selected.value?.run.currentResult !== false && selected.value?.run.status === 'PENDING_REVIEW' && !review.value)
@@ -18,6 +21,13 @@ export function usePrecheck(ticketId, host) {
   function cancelReads() { read++; controller?.abort(); clearTimeout(poll) }
   function clearDetail() { selected.value = null; review.value = null; audit.value = []; auditError.value = ''; moreAudit.value = false }
   function populateDraft() {
+    const savedConclusion = review.value?.evidenceConclusion
+    const savedAction = review.value?.nextAction
+    const authorizationAvailable = selected.value?.evidenceSnapshot?.authorizations?.status === 'AVAILABLE'
+    draft.evidenceConclusion = savedConclusion || (selected.value?.result?.evidenceGap || !authorizationAvailable
+      || selected.value?.run.callStatus === 'FAILED' ? 'INSUFFICIENT' : 'SUFFICIENT')
+    draft.nextAction = savedAction || (review.value?.decision === 'CONFIRMED' ? 'SUBMIT_CONCLUSION'
+      : review.value?.decision === 'ESCALATED' ? 'ESCALATE' : 'REQUEST_EVIDENCE')
     draft.summary = review.value?.summary || selected.value?.result?.summary || ''
     draft.recommendation = review.value?.recommendation || selected.value?.result?.recommendation || 'MANUAL_REVIEW'
     const gap = selected.value?.result?.evidenceGap
@@ -104,16 +114,24 @@ export function usePrecheck(ticketId, host) {
   async function submit(decision) {
     if (busy.value || !canReview.value) return false
     if (!draft.summary.trim() || !draft.reason.trim() || draft.summary.length > 1000 || draft.reason.length > 1000) {
-      error.value = '请填写核查摘要和核查意见，每项不超过 1000 字。'; return false
+      error.value = '请填写核查依据与处理说明，且不超过 1000 字。'; return false
     }
     const currentScope = scope, id = selected.value.run.id
+    const compatible = (draft.evidenceConclusion === 'SUFFICIENT' && draft.nextAction === 'SUBMIT_CONCLUSION' && decision === 'CONFIRMED')
+      || (draft.evidenceConclusion !== 'SUFFICIENT' && draft.nextAction === 'REQUEST_EVIDENCE' && decision === 'REJECTED')
+      || (draft.nextAction === 'ESCALATE' && decision === 'ESCALATED')
+    if (!compatible) {
+      error.value = '证据核查结论与下一步处理不一致，请调整后再提交。'; return false
+    }
     const body = { expectedVersion: selected.value.run.version, decision, ...draft }
     writing.value = true; error.value = ''; notice.value = ''; preservedDraft.value = null
     try {
       await host.api.submit(id, body)
       if (currentScope !== scope) return
       await refresh(id)
-      if (currentScope === scope) notice.value = decision === 'CONFIRMED' ? '人工建议已确认，审核及审计已保存。' : '本轮预审已驳回，审核及审计已保存。'
+      if (currentScope === scope) notice.value = decision === 'CONFIRMED' ? '核查结论已提交，工单已转入完成状态。'
+        : decision === 'ESCALATED' ? '争议已转交复核，核查决定及依据已留痕。'
+          : '补证要求已提交，工单已转入待补证状态。'
       return currentScope === scope
     } catch (cause) {
       if (currentScope !== scope) return

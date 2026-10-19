@@ -62,6 +62,12 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiError> denied(HttpServletRequest request) {
         return error(403, "FORBIDDEN", "当前身份无操作权限", request);
     }
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    ResponseEntity<ApiError> responseStatus(
+            org.springframework.web.server.ResponseStatusException exception,
+            HttpServletRequest request) {
+        return error(exception.getStatusCode().value(), "INVALID_REQUEST", "请求参数不合法", request);
+    }
     @ExceptionHandler({org.springframework.web.bind.MethodArgumentNotValidException.class,
         org.springframework.http.converter.HttpMessageNotReadableException.class,
         jakarta.validation.ConstraintViolationException.class})

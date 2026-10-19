@@ -1,6 +1,7 @@
 package cn.telecom.precheck.precheck;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.telecom.precheck.adapter.HostTicketMapper;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +37,7 @@ class AsyncPrecheckIntegrationTest {
     @Autowired AsyncPrecheckService async;
     @Autowired PrecheckStore store;
     @Autowired JdbcTemplate jdbc;
+    @Autowired HostTicketMapper tickets;
     @MockitoBean PrecheckModel model;
     long version() { return System.currentTimeMillis() * 1_000 + Math.floorMod(System.nanoTime(), 1_000); }
 
@@ -157,9 +159,12 @@ class AsyncPrecheckIntegrationTest {
             release.await(10,TimeUnit.SECONDS);
             return new PrecheckModel.Reply(Samples.VALID,"async-actual-model");
         });
+        String ticketId="TKT-"+UUID.randomUUID().toString().replace("-","").substring(0,12).toUpperCase();
+        assertThat(tickets.insertDraft(ticketId,"异步流转测试工单","测试隔离","普通",
+                "TEST-CUSTOMER","异步流转不应等待模型","测试","WEB","operator")).isEqualTo(1);
         String body="{\"eventId\":\"EV-"+UUID.randomUUID()+"\",\"ticketVersion\":"+version()+"}";
         try {
-            mvc.perform(post("/api/mock-host/tickets/DEMO-001/complaint-queue").with(csrf())
+            mvc.perform(post("/api/mock-host/tickets/{ticketId}/complaint-queue",ticketId).with(csrf())
                             .contentType("application/json").content(body))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.transitioned").value(true))
                     .andExpect(jsonPath("$.precheckAccepted").value(true));

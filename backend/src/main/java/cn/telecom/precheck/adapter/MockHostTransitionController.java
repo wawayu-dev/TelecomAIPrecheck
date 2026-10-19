@@ -106,6 +106,7 @@ public class MockHostTransitionController {
         if (run == null && "DRAFT".equals(workflow)) label = "登记中";
         else if (run == null && "COMPLETED".equals(workflow)) { label = "已完成"; bucket = "COMPLETED"; }
         else if (run == null && "NEEDS_SUPPLEMENT".equals(workflow)) { label = "待补充"; bucket = "PROCESSING"; }
+        else if (run == null && "NEEDS_REVIEW".equals(workflow)) { label = "争议复核中"; bucket = "PROCESSING"; }
         else if (run == null) { label = "待人工处理"; bucket = "PENDING"; }
         else if ("ANALYZING".equals(run.status())) {
             label = "核查中"; bucket = "PROCESSING"; workflow = "SUBMITTED";
@@ -114,6 +115,8 @@ public class MockHostTransitionController {
             var review = reviews.find(run.id());
             if (review != null && "CONFIRMED".equals(review.decision())) {
                 label = "已完成"; bucket = "COMPLETED"; workflow = "COMPLETED";
+            } else if (review != null && "ESCALATED".equals(review.decision())) {
+                label = "争议复核中"; bucket = "PROCESSING"; workflow = "NEEDS_REVIEW";
             } else { label = "待补充"; bucket = "PROCESSING"; workflow = "NEEDS_SUPPLEMENT"; }
         } else { label = "待核查"; bucket = "PENDING"; workflow = "SUBMITTED"; }
         return new TicketSummary(ticket.ticketId(), ticket.title(), ticket.note(), ticket.priority(),

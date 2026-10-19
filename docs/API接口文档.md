@@ -215,15 +215,21 @@
 {
   "expectedVersion":1,
   "decision":"CONFIRMED",
-  "summary":"已核对账单与订购记录，授权仍需进一步确认。",
+  "evidenceConclusion":"SUFFICIENT",
+  "nextAction":"SUBMIT_CONCLUSION",
+  "summary":"客户否认主动订购；人工判断现有证据充分。",
   "recommendation":"VERIFY_AUTHORIZATION",
   "reason":"当前材料不足以认定违规扣费，不执行退费。"
 }
 ```
 
-- `decision`：`CONFIRMED` 或 `REJECTED`。
+- `decision`：`CONFIRMED`、`REJECTED` 或 `ESCALATED`。
+- `evidenceConclusion`：`SUFFICIENT`、`INSUFFICIENT` 或 `CONFLICT`。
+- `nextAction`：`SUBMIT_CONCLUSION`、`REQUEST_EVIDENCE` 或 `ESCALATE`。
+- 组合必须一致：证据充分才能提交完成结论；证据不足或冲突可以要求补证；任何证据结论均可转交争议复核。
 - `summary`、`reason`：必填，最长 1000 字符。
 - 状态或版本变化返回 `409 REVIEW_CONFLICT`。
+- 三种流转分别对应宿主工单状态 `COMPLETED`、`NEEDS_SUPPLEMENT`、`NEEDS_REVIEW`。
 
 ### 7.2 查询人工结果
 

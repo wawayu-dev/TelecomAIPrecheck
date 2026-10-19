@@ -37,12 +37,14 @@ describe('按岗位隔离的工作台', () => {
     expect(wrapper.text()).toContain('已提交 · 核查中')
   })
 
-  it('投诉专员直接查看自动核查结果并处理，不读取审计日志', async () => {
+  it('投诉专员直接查看 AI 辅助建议，不进入重复审核流程', async () => {
     const { wrapper, host } = setup('REVIEWER'); await flushPromises()
-    expect(wrapper.text()).toContain('AI 核查导航')
-    expect(wrapper.text()).toContain('核查材料')
-    expect(wrapper.find('.review-form').exists()).toBe(true)
+    expect(wrapper.text()).toContain('AI 辅助处理建议')
+    expect(wrapper.text()).toContain('当前核查材料')
+    expect(wrapper.find('.review-form').exists()).toBe(false)
+    expect(wrapper.text()).toContain('复制 AI 处理建议')
     expect(host.api.current).toHaveBeenCalledTimes(1)
+    expect(host.api.submit).not.toHaveBeenCalled()
     expect(host.api.timeline).not.toHaveBeenCalled()
   })
 

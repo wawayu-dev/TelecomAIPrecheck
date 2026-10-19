@@ -48,6 +48,11 @@ class ReviewIntegrationTest {
     }
     String pending() { return prechecks.start("DEMO-001","start-trace").run().id(); }
     ReviewRequest request(int version,ReviewRequest.Decision decision) {
+        if (decision == ReviewRequest.Decision.ESCALATED) {
+            return new ReviewRequest(version, decision, ReviewRequest.EvidenceConclusion.CONFLICT,
+                    ReviewRequest.NextAction.ESCALATE, "人工核对：证据存在冲突",
+                    PrecheckResult.Recommendation.MANUAL_REVIEW, "授权与订购流水无法对应，转交争议复核");
+        }
         return new ReviewRequest(version,decision,"人工核对：请补充授权材料",PrecheckResult.Recommendation.VERIFY_AUTHORIZATION,"尚缺授权依据，转人工核实");
     }
     @ParameterizedTest @EnumSource(ReviewRequest.Decision.class)
@@ -254,6 +259,7 @@ class ReviewIntegrationTest {
             .andExpect(jsonPath("$.roles[0]").value("ROLE_AUDITOR"))
             .andExpect(jsonPath("$.csrfToken").isNotEmpty()).andReturn();
         var session=(org.springframework.mock.web.MockHttpSession)result.getRequest().getSession(false);
+        org.springframework.security.test.context.TestSecurityContextHolder.clearContext();
         mvc.perform(get("/api/session").session(session)).andExpect(status().isOk())
             .andExpect(jsonPath("$.actorId").value("auditor"));
         mvc.perform(post("/api/demo-session").contentType("application/json")

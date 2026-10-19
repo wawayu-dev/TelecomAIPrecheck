@@ -31,14 +31,19 @@ public class ReviewService {
         if (runs.find(id)==null) throw new PrecheckNotFoundException();
         // 条件 UPDATE 是并发裁决点；事务内提交人工结果和审计，不能只依赖前端禁用按钮。
         if (reviews.claim(id,request.expectedVersion())!=1) throw new ReviewConflictException();
-        var safe=new ReviewRequest(request.expectedVersion(),request.decision(),mask(request.summary()),request.recommendation(),mask(request.reason()));
+        var safe=new ReviewRequest(request.expectedVersion(),request.decision(),request.evidenceConclusion(),request.nextAction(),
+                mask(request.summary()),request.recommendation(),mask(request.reason()));
         reviews.insert(id,safe,actor,trace,request.expectedVersion()+1);
         if (audits.append(id,actor,"REVIEW_"+request.decision(),"PENDING_REVIEW","COMMITTED",trace)!=1)
             throw new IllegalStateException("Audit write failed");
         var run = runs.find(id);
         // 仅同步本地演示宿主；真实宿主工单不在该表中，由其正式事件集成负责状态回写。
-        tickets.updateStatus(run.ticketId(), request.decision().name().equals("CONFIRMED")
-                ? "COMPLETED" : "NEEDS_SUPPLEMENT", actor);
+        String hostStatus = switch (request.decision()) {
+            case CONFIRMED -> "COMPLETED";
+            case REJECTED -> "NEEDS_SUPPLEMENT";
+            case ESCALATED -> "NEEDS_REVIEW";
+        };
+        tickets.updateStatus(run.ticketId(), hostStatus, actor);
         return reviews.find(id);
     }
     @PreAuthorize("hasAnyRole('REVIEWER','AUDITOR')")

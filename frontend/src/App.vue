@@ -59,7 +59,7 @@ async function chooseNav(index) {
 async function workflowChanged(change) {
   const nextNav = currentRole.value === 'ROLE_OPERATOR' ? 1
     : currentRole.value === 'ROLE_REVIEWER' && change?.decision === 'CONFIRMED' ? 2
-      : currentRole.value === 'ROLE_REVIEWER' && change?.decision === 'REJECTED' ? 1 : null
+      : currentRole.value === 'ROLE_REVIEWER' && ['REJECTED', 'ESCALATED'].includes(change?.decision) ? 1 : null
   await loadTickets(nextNav, change?.ticketId)
   if (change?.ticketId && change.ticketId !== currentTicket.value)
     await router.replace(`/host/tickets/${change.ticketId}/precheck`)

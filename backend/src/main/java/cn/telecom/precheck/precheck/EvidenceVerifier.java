@@ -13,7 +13,8 @@ public class EvidenceVerifier {
         AUTHORIZATION_MISSING, AUTHORIZATION_UNAVAILABLE, ORDER_NOT_LINKED,
         AUTHORIZATION_NOT_LINKED, SERVICE_MISMATCH, AMOUNT_MISMATCH }
     public record Finding(Code code, List<String> evidenceIds) {}
-    public record Report(List<Finding> findings, Set<String> evidenceIds, boolean authorizationIncomplete) {}
+    public record Report(List<Finding> findings, Set<String> evidenceIds, boolean authorizationIncomplete,
+                         String verifiedFact) {}
 
     public Report verify(TicketContext context) {
         try { return inspect(context); }
@@ -43,8 +44,10 @@ public class EvidenceVerifier {
             if (auth.authorizedAt() == null) fail();
             if (!orders.containsKey(auth.subscriptionId())) add(findings, Code.AUTHORIZATION_NOT_LINKED, auth.evidenceId());
         }
-        boolean incomplete = c.authorizations().status() != RetrievalStatus.AVAILABLE
-                || c.bills().status() != RetrievalStatus.AVAILABLE;
+        // 当前上下文只有授权记录、渠道和时间，没有验证方式、验证结果、操作主体等结构化字段。
+        // 因此即使记录存在，也不能由系统自动视为“授权有效”。
+        boolean incomplete = true;
+        String verifiedFact = "现有规则尚未形成可确认的账单与订购关系事实。";
         for (var bill : c.bills().items()) {
             addId(ids, bill.evidenceId()); required(bill.subscriptionId()); required(bill.serviceId());
             if (bill.amount() == null || bill.amount().signum() < 0 || bill.billingPeriod() == null
@@ -55,7 +58,14 @@ public class EvidenceVerifier {
                 if (!bill.serviceId().equals(order.serviceId())) {
                     add(findings, Code.SERVICE_MISMATCH, bill.evidenceId(), order.evidenceId()); incomplete = true;
                 }
-                if (bill.amount().compareTo(order.monthlyPrice()) != 0) add(findings, Code.AMOUNT_MISMATCH, bill.evidenceId(), order.evidenceId());
+                if (bill.amount().compareTo(order.monthlyPrice()) != 0) {
+                    add(findings, Code.AMOUNT_MISMATCH, bill.evidenceId(), order.evidenceId());
+                    verifiedFact = "账单金额 " + bill.amount().toPlainString() + " 元，与订购月费 "
+                            + order.monthlyPrice().toPlainString() + " 元存在差异；差异原因尚未查明。";
+                } else {
+                    verifiedFact = "账单金额 " + bill.amount().toPlainString() + " 元，与“"
+                            + order.serviceName() + "”订购月费一致，未发现计价差异。";
+                }
             }
             if (c.authorizations().items().stream().noneMatch(a -> a.subscriptionId().equals(bill.subscriptionId()))) {
                 incomplete = true;
@@ -63,7 +73,7 @@ public class EvidenceVerifier {
             }
         }
         if (ids.size() > 100) fail();
-        return new Report(List.copyOf(findings), Set.copyOf(ids), incomplete);
+        return new Report(List.copyOf(findings), Set.copyOf(ids), incomplete, verifiedFact);
     }
     private void status(EvidenceSet<?> set, Code missing, Code unavailable, List<Finding> findings) {
         if (set.status() == RetrievalStatus.NOT_FOUND) add(findings, missing);

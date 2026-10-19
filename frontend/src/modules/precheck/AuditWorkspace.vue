@@ -7,7 +7,7 @@ import './precheck.css'
 const props = defineProps({ ticketId: { type: String, required: true } })
 const host = inject(precheckHostKey)
 const { context, history, selected, review, audit, loading, busy, moreAudit, error, auditError, refresh, select, loadMore } = usePrecheck(() => props.ticketId, host)
-const outcome = computed(() => review.value?.decision === 'CONFIRMED' ? '人工核查已完成' : review.value?.decision === 'REJECTED' ? '已退回补充材料' : selected.value?.run.status === 'PENDING_REVIEW' ? '待投诉专员处理' : selected.value?.run.status === 'ANALYZING' ? '系统核查中' : '暂无处理结果')
+const outcome = computed(() => review.value?.decision === 'CONFIRMED' ? '人工核查已完成' : review.value?.decision === 'REJECTED' ? '已要求补充证据' : review.value?.decision === 'ESCALATED' ? '已转交争议复核' : selected.value?.run.status === 'PENDING_REVIEW' ? '待投诉专员处理' : selected.value?.run.status === 'ANALYZING' ? '系统核查中' : '暂无处理结果')
 const citedEvidence = computed(() => selected.value?.result?.evidenceIds || [])
 const mentionedEvidence = computed(() => [...new Set((review.value?.reason?.match(/(?:BILL|ORDER|AUTH)-[A-Za-z0-9_-]+/g) || []))])
 const uncitedEvidence = computed(() => mentionedEvidence.value.filter(id => !citedEvidence.value.includes(id)))
